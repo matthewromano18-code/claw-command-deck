@@ -1,4 +1,4 @@
-import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus, TaskStatus, TaskPriority } from './types';
+import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus } from '@/data/types';
 
 // ─── Event Types ───────────────────────────────────────────
 export type MCEventType =
