@@ -115,5 +115,38 @@ console.log(
   'color: hsl(215, 15%, 52%); font-size: 10px;'
 );
 
+// ─── Auto Demo: Swarm Branch from Engineering ─────────────
+setTimeout(() => {
+  const s = bus.startSwarm('dept-engineering', 'clawteam spawn');
+  setTimeout(() => {
+    const leader = bus.spawnSwarmAgent(s.id, {
+      name: 'Swarm Leader',
+      role: 'leader',
+      parentId: 'dept-engineering',
+      status: 'running',
+      currentTask: 'Coordinating analysis',
+    });
+    if (!leader) return;
+    setTimeout(() => {
+      bus.spawnSwarmAgent(s.id, {
+        name: 'Code Analyzer',
+        role: 'worker',
+        parentId: leader.id,
+        status: 'running',
+        currentTask: 'Scanning codebase',
+      });
+    }, 800);
+    setTimeout(() => {
+      bus.spawnSwarmAgent(s.id, {
+        name: 'Test Runner',
+        role: 'worker',
+        parentId: leader.id,
+        status: 'running',
+        currentTask: 'Running test suite',
+      });
+    }, 1500);
+  }, 600);
+}, 1000);
+
 export { bus, api };
 export default bus;
