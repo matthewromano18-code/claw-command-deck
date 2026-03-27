@@ -37,6 +37,7 @@ const bus = new MissionControlBus({
   chatMessages: [],
   systemVitals: defaultVitals,
   codexApiUsage: defaultCodexApi,
+  swarmSessions: [],
 });
 
 // ─── Expose on Window for External Agent Access ────────────
