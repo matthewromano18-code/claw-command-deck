@@ -12,7 +12,7 @@ const categoryColors: Record<string, string> = {
 };
 
 const SkillsPage = () => {
-  const [skills, setSkills] = useState<Skill[]>(mockSkills);
+  const { skills, agents, bus } = useMissionControl();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
