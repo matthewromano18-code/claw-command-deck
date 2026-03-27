@@ -14,9 +14,14 @@ pub fn run() {
             commands::gateway_install,
             commands::gateway_start,
             commands::gateway_stop,
+            commands::gateway_restart,
             commands::openclaw_status,
+            commands::openclaw_configure,
             commands::get_app_config,
             commands::set_app_config,
+            commands::read_openclaw_config,
+            commands::write_openclaw_config,
+            commands::check_cli_installed,
         ])
         .setup(|app| {
             // Ensure the main window is focused on launch
