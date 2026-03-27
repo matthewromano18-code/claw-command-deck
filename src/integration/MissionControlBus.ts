@@ -17,6 +17,8 @@ export type MCEventType =
   | 'skill:remove'
   | 'chat:message'
   | 'chat:clear'
+  | 'vitals:update'
+  | 'codex-api:update'
   | 'state:reset'
   | 'state:sync';
 
