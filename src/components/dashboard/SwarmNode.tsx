@@ -15,30 +15,31 @@ const statusConfig: Record<SwarmAgentStatus, { dot: string; label: string }> = {
 };
 
 const SwarmNode = ({ data }: { data: SwarmNodeData }) => {
-  const { swarmAgent, isRoot } = data;
+  const { swarmAgent } = data;
   const cfg = statusConfig[swarmAgent.status];
+  const isLeader = swarmAgent.role === 'leader';
 
   return (
     <>
       <Handle type="target" position={Position.Top} className="!bg-border !w-2 !h-2" />
       <div
-        className={`px-3 py-2.5 rounded-md border transition-all duration-300 cursor-pointer min-w-[170px] ${
-          isRoot
-            ? 'bg-primary/10 border-primary/40 shadow-[0_0_10px_hsl(var(--glow-primary))]'
-            : swarmAgent.status === 'error'
-            ? 'bg-destructive/8 border-destructive/30'
-            : 'bg-card/80 border-border/40 hover:border-border/70'
+        className={`px-3 py-2.5 rounded-md border transition-all duration-300 cursor-pointer ${
+          isLeader
+            ? 'min-w-[190px] bg-primary/12 border-primary/50 shadow-[0_0_14px_hsl(var(--glow-strong))]'
+            : 'min-w-[160px] bg-card/80 border-border/40 hover:border-border/70'
+        } ${
+          swarmAgent.status === 'error' ? 'bg-destructive/8 border-destructive/30' : ''
         }`}
       >
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
           <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-          <span className="text-[11px] font-semibold text-foreground truncate">
+          <span className={`text-[11px] font-semibold text-foreground truncate ${isLeader ? 'text-xs' : ''}`}>
             {swarmAgent.name}
           </span>
-          {isRoot && (
-            <span className="text-[8px] px-1 py-0.5 rounded bg-primary/15 text-primary font-medium ml-auto">
-              ROOT
+          {isLeader && (
+            <span className="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold ml-auto tracking-wider">
+              LEADER
             </span>
           )}
         </div>

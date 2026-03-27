@@ -98,6 +98,7 @@ export type SwarmAgentStatus = 'spawning' | 'running' | 'idle' | 'completed' | '
 export interface SwarmAgent {
   id: string;
   name: string;
+  role?: 'leader' | 'worker';
   parentId: string; // swarm-internal parent (trigger agent or another swarm agent)
   status: SwarmAgentStatus;
   currentTask: string;
