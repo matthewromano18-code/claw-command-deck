@@ -127,6 +127,8 @@ function runAgencyDemo() {
   const t = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const log = (agentId: string, agentName: string, msg: string, type: 'received' | 'delegated' | 'processing' | 'completed' | 'failed' = 'processing') =>
     bus.pushEvent({ taskId: 'demo', agentId, agentName, type, message: msg });
+  const think = (agentId: string, agentName: string, content: string, type: 'thinking' | 'action' | 'result' | 'error' | 'plan' = 'thinking') =>
+    bus.pushAgentThought(agentId, agentName, content, type);
 
   // Agent templates
   const mainAgent = mockAgents.find((a) => a.id === 'main-agent')!;
