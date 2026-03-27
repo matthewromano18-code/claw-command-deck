@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Search, Filter, Zap, Clock, Hash, ToggleLeft, ToggleRight } from 'lucide-react';
-import { mockSkills } from '@/data/mockSkills';
-import { mockAgents } from '@/data/mockData';
+import { useMissionControl } from '@/hooks/useMissionControl';
 import { Skill } from '@/data/types';
 
 const categoryColors: Record<string, string> = {
