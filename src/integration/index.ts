@@ -165,7 +165,7 @@ setTimeout(() => {
       }
     }, 5500);
     setTimeout(() => {
-      bus.updateSwarmAgent(s.id, leader.id, { status: 'done', currentTask: 'Audit complete — 2 failures' });
+      bus.updateSwarmAgent(s.id, leader.id, { status: 'completed', currentTask: 'Audit complete — 2 failures' });
     }, 7000);
   }, 600);
 }, 1200);
