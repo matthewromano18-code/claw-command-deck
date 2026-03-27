@@ -290,7 +290,10 @@ class MissionControlBus {
       spawnedAt: new Date().toISOString(),
       ...agent,
     };
-    session.agents.push(full);
+    // Create new array references so React detects the change
+    this.state.swarmSessions = this.state.swarmSessions.map((s) =>
+      s.id === sessionId ? { ...s, agents: [...s.agents, full] } : s
+    );
     this.emit('swarm:agent-spawn', { sessionId, agent: full });
     return full;
   }
