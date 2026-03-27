@@ -191,7 +191,7 @@ export class GatewayConnection {
       case 'connect.auth_required':
       case 'auth.challenge':
         this.setState('auth_required');
-        this.emit('auth_challenge', msg.payload as AuthChallenge);
+        this.emit('auth_challenge', msg.payload as unknown as AuthChallenge);
         break;
 
       case 'auth.success':
