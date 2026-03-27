@@ -293,11 +293,13 @@ unsub();
 ### All Event Types
 ```
 agent:update, agent:add, agent:remove,
+agent:thought,
 task:submit, task:update, task:complete,
 event:push, metrics:update, settings:update,
 skill:add, skill:update, skill:remove,
 chat:message, chat:clear,
 vitals:update, codex-api:update,
+swarm:start, swarm:agent-spawn, swarm:agent-update, swarm:complete,
 state:reset, state:sync
 ```
 
