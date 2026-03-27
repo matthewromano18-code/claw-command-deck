@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { mockAgents } from '@/data/mockData';
 import { Agent } from '@/data/types';
 import { Plus, Pencil, Trash2, Network } from 'lucide-react';
+import AgentThoughtStream from '@/components/agents/AgentThoughtStream';
+import bus from '@/integration';
 
 const statusColors: Record<string, string> = {
   idle: 'bg-muted-foreground/20 text-muted-foreground',
@@ -15,7 +16,28 @@ const statusColors: Record<string, string> = {
 };
 
 const AgentsPage = () => {
-  const [agents] = useState<Agent[]>(mockAgents);
+  const [agents, setAgents] = useState<Agent[]>(bus.getState().agents);
+  const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
+
+  // Live-sync agents from bus
+  useEffect(() => {
+    const unsubs = [
+      bus.on('agent:add', () => setAgents([...bus.getState().agents])),
+      bus.on('agent:update', () => setAgents([...bus.getState().agents])),
+      bus.on('agent:remove', () => setAgents([...bus.getState().agents])),
+      bus.on('state:sync', () => setAgents([...bus.getState().agents])),
+      bus.on('state:reset', () => setAgents([...bus.getState().agents])),
+    ];
+    return () => unsubs.forEach((u) => u());
+  }, []);
+
+  const toggleThought = (agentId: string) => {
+    setExpandedThoughts((prev) => {
+      const next = new Set(prev);
+      next.has(agentId) ? next.delete(agentId) : next.add(agentId);
+      return next;
+    });
+  };
 
   const mainAgent = agents.find((a) => a.type === 'main');
   const departments = agents.filter((a) => a.type === 'department');
@@ -52,6 +74,12 @@ const AgentsPage = () => {
               {mainAgent.status}
             </span>
           </div>
+          <AgentThoughtStream
+            agentId={mainAgent.id}
+            agentName={mainAgent.name}
+            isExpanded={expandedThoughts.has(mainAgent.id)}
+            onToggle={() => toggleThought(mainAgent.id)}
+          />
         </motion.div>
       )}
 
@@ -66,7 +94,7 @@ const AgentsPage = () => {
               animate={{ opacity: 1, y: 0 }}
               className="glass-panel p-4"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase ${statusColors[dept.status]}`}>
                     {dept.status}
@@ -83,7 +111,16 @@ const AgentsPage = () => {
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+
+              {/* Department thought stream */}
+              <AgentThoughtStream
+                agentId={dept.id}
+                agentName={dept.name}
+                isExpanded={expandedThoughts.has(dept.id)}
+                onToggle={() => toggleThought(dept.id)}
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
                 {specs.map((spec) => (
                   <div key={spec.id} className="px-3 py-2.5 rounded-md bg-secondary/30 border border-border/20">
                     <div className="flex items-center justify-between mb-1">
@@ -98,6 +135,12 @@ const AgentsPage = () => {
                       <span>{(spec.successRate * 100).toFixed(0)}%</span>
                       <span>{spec.avgLatency}ms</span>
                     </div>
+                    <AgentThoughtStream
+                      agentId={spec.id}
+                      agentName={spec.name}
+                      isExpanded={expandedThoughts.has(spec.id)}
+                      onToggle={() => toggleThought(spec.id)}
+                    />
                   </div>
                 ))}
                 <button className="px-3 py-2.5 rounded-md border border-dashed border-border/40 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors flex items-center justify-center gap-1.5">

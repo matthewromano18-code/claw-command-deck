@@ -93,6 +93,9 @@ const api = {
   completeSwarm: bus.completeSwarm.bind(bus),
   getActiveSwarm: bus.getActiveSwarm.bind(bus),
 
+  // Agent Thoughts
+  pushAgentThought: bus.pushAgentThought.bind(bus),
+
   // Bulk
   syncState: bus.syncState.bind(bus),
   resetState: bus.resetState.bind(bus),
