@@ -5,7 +5,6 @@ import ExecutionFeed from '@/components/dashboard/ExecutionFeed';
 import CompletedTasks from '@/components/dashboard/CompletedTasks';
 import AgentDetailDrawer from '@/components/dashboard/AgentDetailDrawer';
 import GatewayStatusCard from '@/components/gateway/GatewayStatusCard';
-import CodexUsageTracker from '@/components/dashboard/CodexUsageTracker';
 import SystemVitals from '@/components/dashboard/SystemVitals';
 import CodexApiUsage from '@/components/dashboard/CodexApiUsage';
 import { useState } from 'react';
@@ -37,7 +36,6 @@ const Dashboard = () => {
         <CommandPrompt onSubmit={(prompt) => submitTask(prompt)} />
         <GatewayStatusCard />
       </div>
-      <CodexUsageTracker />
       <SystemVitals />
       <CodexApiUsage />
 
