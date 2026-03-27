@@ -1,6 +1,6 @@
 import { useMissionControl } from '@/hooks/useMissionControl';
 import CommandPrompt from '@/components/dashboard/CommandPrompt';
-import UsageBar from '@/components/dashboard/UsageBar';
+
 import QuickSettings from '@/components/dashboard/QuickSettings';
 import AgentFlowChart from '@/components/dashboard/AgentFlowChart';
 import ExecutionFeed from '@/components/dashboard/ExecutionFeed';
@@ -37,7 +37,7 @@ const Dashboard = () => {
         <CommandPrompt onSubmit={(prompt) => submitTask(prompt)} />
         <GatewayStatusCard />
       </div>
-      <UsageBar metrics={metrics} />
+      <CodexUsageTracker />
       <QuickSettings settings={settings} onToggle={toggleSetting} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
@@ -52,7 +52,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <CodexUsageTracker />
 
       {selectedAgent && (
         <>
