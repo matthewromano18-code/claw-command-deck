@@ -249,6 +249,23 @@ class MissionControlBus {
   }
 
   // ══════════════════════════════════════════════════════════
+  // AGENT THOUGHTS
+  // ══════════════════════════════════════════════════════════
+  pushAgentThought(agentId: string, agentName: string, content: string, type: AgentThought['type'] = 'thinking') {
+    const thought: AgentThought = {
+      id: `thought-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      agentId,
+      agentName,
+      content,
+      type,
+      timestamp: new Date().toISOString(),
+    };
+    this.emit('agent:thought', thought);
+    return thought;
+  }
+
+
+  // ══════════════════════════════════════════════════════════
   // BULK
   // ══════════════════════════════════════════════════════════
   // ══════════════════════════════════════════════════════════
