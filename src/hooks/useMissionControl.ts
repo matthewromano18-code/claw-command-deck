@@ -4,17 +4,13 @@ import { MCState, MCEventType } from '@/integration/MissionControlBus';
 
 /**
  * React hook that subscribes to Mission Control bus state.
- * Re-renders when any event fires (or specific event types).
  */
 export function useMissionControl(listenTo: MCEventType | '*' = '*') {
   const [state, setState] = useState<MCState>(bus.getState());
-  const stateRef = useRef(state);
 
   useEffect(() => {
     const unsub = bus.on(listenTo, () => {
-      const next = bus.getState();
-      stateRef.current = next;
-      setState(next);
+      setState(bus.getState());
     });
     return unsub;
   }, [listenTo]);
@@ -36,7 +32,6 @@ export function useMissionControl(listenTo: MCEventType | '*' = '*') {
       message: `New task: ${prompt.slice(0, 80)}`,
     });
 
-    // Simulate delegation
     const agents = bus.getState().agents;
     const depts = agents.filter((a) => a.type === 'department');
 
