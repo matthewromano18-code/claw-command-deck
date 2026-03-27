@@ -37,11 +37,7 @@ const SkillsPage = () => {
   const totalUsage = skills.reduce((sum, s) => sum + s.usageCount, 0);
 
   const toggleSkill = (id: string) => {
-    setSkills((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, status: s.status === 'active' ? 'inactive' : 'active' } : s
-      )
-    );
+    bus.toggleSkill(id);
   };
 
   return (
