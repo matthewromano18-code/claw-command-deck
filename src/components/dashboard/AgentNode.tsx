@@ -33,7 +33,7 @@ const AgentNode = ({ data }: { data: AgentNodeData }) => {
           typeStyles[agent.type]
         } ${
           isOnPath
-            ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_hsl(175,70%,50%,0.2)]'
+            ? 'bg-primary/8 border-primary/40 shadow-[0_0_12px_hsl(218,68%,33%,0.15)]'
             : 'bg-card/90 border-border/50 hover:border-border'
         }`}
       >
@@ -44,7 +44,7 @@ const AgentNode = ({ data }: { data: AgentNodeData }) => {
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] text-muted-foreground capitalize">{agent.status}</span>
           {agent.queueCount > 0 && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
               {agent.queueCount} queued
             </span>
           )}

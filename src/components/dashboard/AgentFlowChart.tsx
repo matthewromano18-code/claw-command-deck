@@ -62,7 +62,7 @@ const AgentFlowChart = ({ agents, activeTaskPath = [], onNodeClick }: AgentFlowC
         source: 'main-agent',
         target: dept.id,
         animated: activeTaskPath.includes(dept.id) || statusToAnimated(dept.status),
-        style: { stroke: activeTaskPath.includes(dept.id) ? 'hsl(175, 70%, 50%)' : undefined },
+        style: { stroke: activeTaskPath.includes(dept.id) ? 'hsl(218, 68%, 50%)' : undefined },
       });
 
       const deptSpecs = specialists.filter((s) => s.parentId === dept.id);
@@ -84,7 +84,7 @@ const AgentFlowChart = ({ agents, activeTaskPath = [], onNodeClick }: AgentFlowC
           source: dept.id,
           target: spec.id,
           animated: activeTaskPath.includes(spec.id) || statusToAnimated(spec.status),
-          style: { stroke: activeTaskPath.includes(spec.id) ? 'hsl(175, 70%, 50%)' : undefined },
+          style: { stroke: activeTaskPath.includes(spec.id) ? 'hsl(218, 68%, 50%)' : undefined },
         });
       });
     });
@@ -111,7 +111,7 @@ const AgentFlowChart = ({ agents, activeTaskPath = [], onNodeClick }: AgentFlowC
         minZoom={0.5}
         maxZoom={1.5}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="hsl(225, 12%, 18%)" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="hsl(218, 25%, 15%)" />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>
