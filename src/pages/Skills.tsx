@@ -105,7 +105,7 @@ const SkillsPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {filtered.map((skill, i) => {
           const linkedAgents = skill.agentIds
-            .map((id) => mockAgents.find((a) => a.id === id))
+            .map((id) => agents.find((a) => a.id === id))
             .filter(Boolean);
 
           return (
