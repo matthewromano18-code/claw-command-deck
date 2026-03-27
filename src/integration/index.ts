@@ -26,6 +26,9 @@ const defaultCodexApi: CodexApiUsageData = {
   plan: 'ChatGPT Plus',
 };
 
+// ─── Clear stale state before bus init (ensures new fields like swarmSessions exist) ─
+localStorage.removeItem('mission-control-state');
+
 // ─── Singleton Bus Instance ────────────────────────────────
 const bus = new MissionControlBus({
   agents: mockAgents,
@@ -39,9 +42,6 @@ const bus = new MissionControlBus({
   codexApiUsage: defaultCodexApi,
   swarmSessions: [],
 });
-
-// ─── Clear stale persisted state so demo swarm always shows ─
-bus.clearStorage();
 
 // ─── Wednesday Demo: Engineering kicks off a swarm ─────────
 setTimeout(() => {
