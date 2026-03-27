@@ -216,16 +216,17 @@ const AgentFlowChartInner = ({
   return (
     <div className={`w-full glass-panel overflow-hidden transition-all duration-500`} style={{ height: chartHeight }}>
       <ReactFlow
+        key={`flow-${nodes.length}`}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         fitView
-        fitViewOptions={{ padding: 0.3 }}
+        fitViewOptions={{ padding: 0.25 }}
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}
         nodesConnectable={false}
-        minZoom={0.3}
+        minZoom={0.2}
         maxZoom={1.5}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="hsl(218, 25%, 15%)" />
