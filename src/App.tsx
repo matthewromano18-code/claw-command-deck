@@ -32,6 +32,8 @@ const App = () => (
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AuthDialog />
+          <PairingDialog />
         </div>
       </BrowserRouter>
     </TooltipProvider>
