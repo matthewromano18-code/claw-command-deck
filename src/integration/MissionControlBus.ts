@@ -299,10 +299,10 @@ class MissionControlBus {
   }
 
   updateSwarmAgent(sessionId: string, agentId: string, updates: Partial<SwarmAgent>) {
-    const session = this.state.swarmSessions.find((s) => s.id === sessionId);
-    if (!session) return;
-    session.agents = session.agents.map((a) =>
-      a.id === agentId ? { ...a, ...updates } : a
+    this.state.swarmSessions = this.state.swarmSessions.map((s) =>
+      s.id === sessionId
+        ? { ...s, agents: s.agents.map((a) => (a.id === agentId ? { ...a, ...updates } : a)) }
+        : s
     );
     this.emit('swarm:agent-update', { sessionId, agentId, updates });
   }
