@@ -265,6 +265,56 @@ class MissionControlBus {
   }
 
   // ══════════════════════════════════════════════════════════
+  // SWARM
+  // ══════════════════════════════════════════════════════════
+  startSwarm(triggerAgentId: string, command: string): SwarmSession {
+    const session: SwarmSession = {
+      id: `swarm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      triggerAgentId,
+      command,
+      startedAt: new Date().toISOString(),
+      status: 'active',
+      agents: [],
+    };
+    this.state.swarmSessions = [session, ...this.state.swarmSessions];
+    this.emit('swarm:start', session);
+    return session;
+  }
+
+  spawnSwarmAgent(sessionId: string, agent: Omit<SwarmAgent, 'id' | 'spawnedAt'> & { id?: string }): SwarmAgent | null {
+    const session = this.state.swarmSessions.find((s) => s.id === sessionId);
+    if (!session) return null;
+    const full: SwarmAgent = {
+      id: agent.id || `sw-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      spawnedAt: new Date().toISOString(),
+      ...agent,
+    };
+    session.agents.push(full);
+    this.emit('swarm:agent-spawn', { sessionId, agent: full });
+    return full;
+  }
+
+  updateSwarmAgent(sessionId: string, agentId: string, updates: Partial<SwarmAgent>) {
+    const session = this.state.swarmSessions.find((s) => s.id === sessionId);
+    if (!session) return;
+    session.agents = session.agents.map((a) =>
+      a.id === agentId ? { ...a, ...updates } : a
+    );
+    this.emit('swarm:agent-update', { sessionId, agentId, updates });
+  }
+
+  completeSwarm(sessionId: string, status: 'completed' | 'failed' = 'completed') {
+    this.state.swarmSessions = this.state.swarmSessions.map((s) =>
+      s.id === sessionId ? { ...s, status } : s
+    );
+    this.emit('swarm:complete', { sessionId, status });
+  }
+
+  getActiveSwarm(): SwarmSession | null {
+    return this.state.swarmSessions.find((s) => s.status === 'active') || null;
+  }
+
+  // ══════════════════════════════════════════════════════════
   // BULK
   // ══════════════════════════════════════════════════════════
   syncState(newState: Partial<MCState>) {
@@ -277,6 +327,7 @@ class MissionControlBus {
     if (newState.chatMessages) this.state.chatMessages = newState.chatMessages;
     if (newState.systemVitals) this.state.systemVitals = newState.systemVitals;
     if (newState.codexApiUsage) this.state.codexApiUsage = newState.codexApiUsage;
+    if (newState.swarmSessions) this.state.swarmSessions = newState.swarmSessions;
     this.emit('state:sync', newState);
   }
 
