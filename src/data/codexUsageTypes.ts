@@ -1,7 +1,7 @@
 // ─── Codex / OpenAI Usage Tracking Types ───────────────────
 
 export type UsageHealthStatus = 'healthy' | 'warning' | 'critical';
-export type TimeRange = '1h' | 'today' | '7d' | '30d';
+export type TimeRange = '1h' | '5h' | 'today' | '7d' | '30d' | 'weekly';
 
 export interface CodexUsageSummary {
   totalTokens: number;

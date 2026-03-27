@@ -22,9 +22,11 @@ const genTrend = (count: number, intervalMin: number, baseTokens: number): Codex
 // ─── Trends ────────────────────────────────────────────────
 const trends: Record<TimeRange, CodexUsageDataPoint[]> = {
   '1h': genTrend(12, 5, 1200),
+  '5h': genTrend(20, 15, 2400),
   today: genTrend(24, 60, 4800),
   '7d': genTrend(7, 1440, 32000),
   '30d': genTrend(30, 1440, 28000),
+  weekly: genTrend(7, 1440, 32000),
 };
 
 // ─── Breakdowns ────────────────────────────────────────────
