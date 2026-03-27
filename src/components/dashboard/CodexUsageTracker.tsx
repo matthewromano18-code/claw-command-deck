@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCodexUsage } from '@/hooks/useCodexUsage';
-import { TimeRange, BreakdownCategory, UsageHealthStatus, UsageEventType } from '@/data/codexUsageTypes';
+import { BreakdownCategory, UsageHealthStatus, UsageEventType } from '@/data/codexUsageTypes';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
@@ -55,73 +55,6 @@ const breakdownLabels: Record<BreakdownCategory, string> = {
   taskType: 'Task Type',
 };
 
-// ─── Compact Summary Bar ───────────────────────────────────
-const UsageSummaryBar = ({
-  label,
-  tokens,
-  requests,
-  cost,
-  quotaPct,
-  healthStatus,
-  isOpen,
-  onClick,
-}: {
-  label: string;
-  tokens: number;
-  requests: number;
-  cost: number;
-  quotaPct: number | null;
-  healthStatus: UsageHealthStatus;
-  isOpen: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className="w-full glass-panel p-2.5 flex items-center gap-3 hover:bg-accent/40 transition-colors cursor-pointer text-left"
-  >
-    <div className="flex items-center gap-1.5">
-      <Cpu className="w-3.5 h-3.5 text-primary" />
-      <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">{label}</span>
-    </div>
-
-    <div className="flex items-center gap-4 flex-1">
-      <div className="flex items-center gap-1.5">
-        <Zap className="w-3 h-3 text-primary" />
-        <span className="text-sm font-semibold font-mono text-foreground">{fmt(tokens)}</span>
-        <span className="text-[10px] text-muted-foreground">tokens</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <Activity className="w-3 h-3 text-muted-foreground" />
-        <span className="text-sm font-semibold font-mono text-foreground">{fmt(requests)}</span>
-        <span className="text-[10px] text-muted-foreground">req</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <DollarSign className="w-3 h-3 text-warning" />
-        <span className="text-sm font-semibold font-mono text-foreground">${cost.toFixed(2)}</span>
-      </div>
-      {quotaPct !== null && (
-        <div className="flex items-center gap-1.5 ml-auto">
-          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                quotaPct > 90 ? 'bg-destructive' : quotaPct > 70 ? 'bg-warning' : 'bg-success'
-              }`}
-              style={{ width: `${Math.min(quotaPct, 100)}%` }}
-            />
-          </div>
-          <span className="text-[10px] font-mono text-muted-foreground">{quotaPct}%</span>
-        </div>
-      )}
-    </div>
-
-    <Badge className={`${healthColor[healthStatus]} text-[9px] px-1.5 py-0 h-4`}>
-      {healthStatus}
-    </Badge>
-    <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-  </button>
-);
-
-// ─── Stat Card (for expanded view) ─────────────────────────
 const StatCard = ({ icon: Icon, label, value, sub, color }: {
   icon: React.ElementType; label: string; value: string; sub?: string; color?: string;
 }) => (
@@ -135,14 +68,15 @@ const StatCard = ({ icon: Icon, label, value, sub, color }: {
   </div>
 );
 
-// ═══════════════════════════════════════════════════════════
+type ViewRange = '5h' | 'weekly';
+
 const CodexUsageTracker = () => {
   const {
-    store, selectedRange, setSelectedRange,
-    selectedBreakdown, setSelectedBreakdown,
+    store, selectedBreakdown, setSelectedBreakdown,
     isRefreshing, refresh, exportReport, copyDiagnostics,
   } = useCodexUsage();
-  const [expanded, setExpanded] = useState<'5h' | 'weekly' | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [viewRange, setViewRange] = useState<ViewRange>('5h');
   const [chartMode, setChartMode] = useState<'tokens' | 'requests' | 'cost'>('tokens');
 
   const { summary, health, trends, breakdowns, recentEvents } = store;
@@ -152,43 +86,53 @@ const CodexUsageTracker = () => {
     ? Math.round((summary.totalTokens / summary.quotaLimit) * 100)
     : null;
 
-  // Compute 5h and weekly summaries from trend data
-  const sum5h = trends['5h'].reduce((a, d) => ({ tokens: a.tokens + d.tokens, requests: a.requests + d.requests, cost: a.cost + d.cost }), { tokens: 0, requests: 0, cost: 0 });
-  const sumWeekly = trends['weekly'].reduce((a, d) => ({ tokens: a.tokens + d.tokens, requests: a.requests + d.requests, cost: a.cost + d.cost }), { tokens: 0, requests: 0, cost: 0 });
-
-  const toggle = (panel: '5h' | 'weekly') => {
-    setExpanded((prev) => (prev === panel ? null : panel));
-    if (panel === '5h') setSelectedRange('5h');
-    else setSelectedRange('weekly');
-  };
-
-  const activeTrendData = expanded === '5h' ? trends['5h'] : trends['weekly'];
-
   return (
-    <div className="space-y-1.5">
-      {/* ── 5h Bar ── */}
-      <UsageSummaryBar
-        label="5h"
-        tokens={sum5h.tokens}
-        requests={sum5h.requests}
-        cost={sum5h.cost}
-        quotaPct={null}
-        healthStatus={health.status}
-        isOpen={expanded === '5h'}
-        onClick={() => toggle('5h')}
-      />
+    <div className="space-y-0">
+      {/* ── Collapsed Bar ── */}
+      <button
+        onClick={() => setExpanded((p) => !p)}
+        className="w-full glass-panel p-2.5 flex items-center gap-3 hover:bg-accent/40 transition-colors cursor-pointer text-left"
+      >
+        <div className="flex items-center gap-1.5">
+          <Cpu className="w-3.5 h-3.5 text-primary" />
+          <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Codex</span>
+        </div>
 
-      {/* ── Weekly Bar ── */}
-      <UsageSummaryBar
-        label="Weekly"
-        tokens={sumWeekly.tokens}
-        requests={sumWeekly.requests}
-        cost={sumWeekly.cost}
-        quotaPct={quotaPct}
-        healthStatus={health.status}
-        isOpen={expanded === 'weekly'}
-        onClick={() => toggle('weekly')}
-      />
+        <div className="flex items-center gap-4 flex-1">
+          <div className="flex items-center gap-1.5">
+            <Zap className="w-3 h-3 text-primary" />
+            <span className="text-sm font-semibold font-mono text-foreground">{fmt(summary.totalTokens)}</span>
+            <span className="text-[10px] text-muted-foreground">tokens</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Activity className="w-3 h-3 text-muted-foreground" />
+            <span className="text-sm font-semibold font-mono text-foreground">{fmt(summary.requestsMade)}</span>
+            <span className="text-[10px] text-muted-foreground">req</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <DollarSign className="w-3 h-3 text-warning" />
+            <span className="text-sm font-semibold font-mono text-foreground">${summary.estimatedCost.toFixed(2)}</span>
+          </div>
+          {quotaPct !== null && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    quotaPct > 90 ? 'bg-destructive' : quotaPct > 70 ? 'bg-warning' : 'bg-success'
+                  }`}
+                  style={{ width: `${Math.min(quotaPct, 100)}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-muted-foreground">{quotaPct}%</span>
+            </div>
+          )}
+        </div>
+
+        <Badge className={`${healthColor[health.status]} text-[9px] px-1.5 py-0 h-4`}>
+          {health.status}
+        </Badge>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
 
       {/* ── Expanded Detail Panel ── */}
       <AnimatePresence>
@@ -200,7 +144,7 @@ const CodexUsageTracker = () => {
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="space-y-3 pt-1">
+            <div className="space-y-3 pt-2">
               {/* Stats Grid */}
               <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
                 <StatCard icon={Zap} label="Total Tokens" value={fmt(summary.totalTokens)} color="text-primary" />
@@ -209,22 +153,11 @@ const CodexUsageTracker = () => {
                 <StatCard icon={Database} label="Cached" value={fmt(summary.cachedTokens)} color="text-muted-foreground" />
                 <StatCard icon={Activity} label="Requests" value={fmt(summary.requestsMade)} />
                 <StatCard icon={DollarSign} label="Est. Cost" value={`$${summary.estimatedCost.toFixed(2)}`} color="text-warning" />
-                <StatCard
-                  icon={Shield}
-                  label="Remaining"
-                  value={summary.remainingQuota !== null ? fmt(summary.remainingQuota) : '—'}
-                  sub={quotaPct !== null ? `${quotaPct}% used` : undefined}
-                  color="text-success"
-                />
-                <StatCard
-                  icon={Clock}
-                  label="Rate Limit"
-                  value={health.rateLimitRemaining !== null ? fmt(health.rateLimitRemaining) : '—'}
-                  color={health.rateLimitState === 'ok' ? 'text-success' : 'text-warning'}
-                />
+                <StatCard icon={Shield} label="Remaining" value={summary.remainingQuota !== null ? fmt(summary.remainingQuota) : '—'} sub={quotaPct !== null ? `${quotaPct}% used` : undefined} color="text-success" />
+                <StatCard icon={Clock} label="Rate Limit" value={health.rateLimitRemaining !== null ? fmt(health.rateLimitRemaining) : '—'} color={health.rateLimitState === 'ok' ? 'text-success' : 'text-warning'} />
               </div>
 
-              {/* Health Bar */}
+              {/* Health */}
               <Card className="glass-panel">
                 <CardContent className="p-2.5">
                   <div className="flex items-center justify-between">
@@ -248,21 +181,29 @@ const CodexUsageTracker = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                        <CardTitle className="text-xs font-semibold">Trends — {expanded === '5h' ? 'Last 5 Hours' : 'This Week'}</CardTitle>
+                        <CardTitle className="text-xs font-semibold">Trends</CardTitle>
                       </div>
-                      <Tabs value={chartMode} onValueChange={(v) => setChartMode(v as any)}>
-                        <TabsList className="h-6 p-0.5">
-                          <TabsTrigger value="tokens" className="text-[10px] px-2 h-5">Tokens</TabsTrigger>
-                          <TabsTrigger value="requests" className="text-[10px] px-2 h-5">Requests</TabsTrigger>
-                          <TabsTrigger value="cost" className="text-[10px] px-2 h-5">Cost</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
+                      <div className="flex items-center gap-2">
+                        <Tabs value={viewRange} onValueChange={(v) => setViewRange(v as ViewRange)}>
+                          <TabsList className="h-6 p-0.5">
+                            <TabsTrigger value="5h" className="text-[10px] px-2 h-5">5h</TabsTrigger>
+                            <TabsTrigger value="weekly" className="text-[10px] px-2 h-5">Weekly</TabsTrigger>
+                          </TabsList>
+                        </Tabs>
+                        <Tabs value={chartMode} onValueChange={(v) => setChartMode(v as any)}>
+                          <TabsList className="h-6 p-0.5">
+                            <TabsTrigger value="tokens" className="text-[10px] px-2 h-5">Tokens</TabsTrigger>
+                            <TabsTrigger value="requests" className="text-[10px] px-2 h-5">Requests</TabsTrigger>
+                            <TabsTrigger value="cost" className="text-[10px] px-2 h-5">Cost</TabsTrigger>
+                          </TabsList>
+                        </Tabs>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="p-3 pt-0">
                     <div className="h-[160px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={activeTrendData}>
+                        <AreaChart data={trends[viewRange]}>
                           <defs>
                             <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="hsl(218, 68%, 33%)" stopOpacity={0.3} />
@@ -306,12 +247,7 @@ const CodexUsageTracker = () => {
                         <div key={item.label} className="flex items-center gap-2">
                           <span className="text-[11px] text-foreground w-28 truncate font-medium">{item.label}</span>
                           <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${item.percentage}%` }}
-                              transition={{ duration: 0.6, ease: 'easeOut' }}
-                              className="h-full rounded-full bg-primary"
-                            />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${item.percentage}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} className="h-full rounded-full bg-primary" />
                           </div>
                           <span className="text-[10px] text-muted-foreground font-mono w-10 text-right">{fmt(item.tokens)}</span>
                           <span className="text-[10px] text-muted-foreground font-mono w-12 text-right">${item.cost.toFixed(2)}</span>
