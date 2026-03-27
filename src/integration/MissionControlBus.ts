@@ -39,6 +39,8 @@ export interface MCState {
   settings: SettingToggle[];
   skills: Skill[];
   chatMessages: ChatMessage[];
+  systemVitals: SystemVitalsData;
+  codexApiUsage: CodexApiUsageData;
 }
 
 const STORAGE_KEY = 'mission-control-state';
