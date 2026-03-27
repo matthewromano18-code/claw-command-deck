@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Network, ListTodo, Settings, Sparkles, MessageCircle } from 'lucide-react';
 import ChatPanel from './ChatPanel';
-import nexxenLogo from '@/assets/nexxen-logo.png';
+
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
