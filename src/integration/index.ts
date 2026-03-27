@@ -1,6 +1,30 @@
 import MissionControlBus from './MissionControlBus';
 import { mockAgents, mockTasks, mockEvents, mockMetrics, mockSettings } from '@/data/mockData';
 import { mockSkills } from '@/data/mockSkills';
+import { SystemVitalsData, CodexApiUsageData } from '@/data/types';
+
+const defaultVitals: SystemVitalsData = {
+  cpu: { percentage: 42, subtitle: 'Apple M4', details: [
+    { label: 'user', value: '26.3%' }, { label: 'sys', value: '15.8%' },
+    { label: 'idle', value: '57.9%' }, { label: 'cores', value: '10' },
+  ]},
+  memory: { percentage: 74, details: [
+    { label: 'used of total', value: '11.9 GB of 16.0 GB' }, { label: 'available', value: '4.1 GB' },
+  ]},
+  disk: { percentage: 34, details: [
+    { label: 'used of total', value: '157.2 GB of 460.4 GB' }, { label: 'available', value: '266.4 GB' },
+  ]},
+  temperature: { value: null, unit: '°C', message: 'Requires elevated access' },
+  uptime: '4 days',
+  hostname: 'Mission-Control.local',
+};
+
+const defaultCodexApi: CodexApiUsageData = {
+  fiveHourPct: 0,
+  weeklyPct: 0,
+  codexTasks: 0,
+  plan: 'ChatGPT Plus',
+};
 
 // ─── Singleton Bus Instance ────────────────────────────────
 const bus = new MissionControlBus({
@@ -11,6 +35,8 @@ const bus = new MissionControlBus({
   settings: mockSettings,
   skills: mockSkills,
   chatMessages: [],
+  systemVitals: defaultVitals,
+  codexApiUsage: defaultCodexApi,
 });
 
 // ─── Expose on Window for External Agent Access ────────────
@@ -50,6 +76,12 @@ const api = {
   getChatMessages: bus.getChatMessages.bind(bus),
   clearChat: bus.clearChat.bind(bus),
 
+  // System Vitals
+  updateSystemVitals: bus.updateSystemVitals.bind(bus),
+
+  // Codex API Usage
+  updateCodexApiUsage: bus.updateCodexApiUsage.bind(bus),
+
   // Bulk
   syncState: bus.syncState.bind(bus),
   resetState: bus.resetState.bind(bus),
@@ -59,15 +91,15 @@ const api = {
   on: bus.on.bind(bus),
 
   // Meta
-  version: '2.0.0',
+  version: '2.1.0',
 };
 
 // Attach to window
 (window as any).MissionControl = api;
 
 console.log(
-  '%c🚀 Mission Control API v2.0 — window.MissionControl\n' +
-  '%cAgents • Tasks • Skills • Chat • Events • Metrics • Settings',
+  '%c🚀 Mission Control API v2.1 — window.MissionControl\n' +
+  '%cAgents • Tasks • Skills • Chat • Vitals • Codex • Events • Metrics • Settings',
   'color: hsl(175, 70%, 50%); font-weight: bold; font-size: 12px;',
   'color: hsl(215, 15%, 52%); font-size: 10px;'
 );

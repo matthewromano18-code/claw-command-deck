@@ -1,4 +1,4 @@
-import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus, Skill } from '@/data/types';
+import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus, Skill, SystemVitalsData, CodexApiUsageData } from '@/data/types';
 import { ChatMessage } from '@/data/chatTypes';
 
 // ─── Event Types ───────────────────────────────────────────
@@ -17,6 +17,8 @@ export type MCEventType =
   | 'skill:remove'
   | 'chat:message'
   | 'chat:clear'
+  | 'vitals:update'
+  | 'codex-api:update'
   | 'state:reset'
   | 'state:sync';
 
@@ -37,6 +39,8 @@ export interface MCState {
   settings: SettingToggle[];
   skills: Skill[];
   chatMessages: ChatMessage[];
+  systemVitals: SystemVitalsData;
+  codexApiUsage: CodexApiUsageData;
 }
 
 const STORAGE_KEY = 'mission-control-state';
@@ -239,6 +243,25 @@ class MissionControlBus {
   // ══════════════════════════════════════════════════════════
   // BULK
   // ══════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════
+  // SYSTEM VITALS
+  // ══════════════════════════════════════════════════════════
+  updateSystemVitals(updates: Partial<SystemVitalsData>) {
+    this.state.systemVitals = { ...this.state.systemVitals, ...updates };
+    this.emit('vitals:update', updates);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // CODEX API USAGE
+  // ══════════════════════════════════════════════════════════
+  updateCodexApiUsage(updates: Partial<CodexApiUsageData>) {
+    this.state.codexApiUsage = { ...this.state.codexApiUsage, ...updates };
+    this.emit('codex-api:update', updates);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BULK
+  // ══════════════════════════════════════════════════════════
   syncState(newState: Partial<MCState>) {
     if (newState.agents) this.state.agents = newState.agents;
     if (newState.tasks) this.state.tasks = newState.tasks;
@@ -247,6 +270,8 @@ class MissionControlBus {
     if (newState.settings) this.state.settings = newState.settings;
     if (newState.skills) this.state.skills = newState.skills;
     if (newState.chatMessages) this.state.chatMessages = newState.chatMessages;
+    if (newState.systemVitals) this.state.systemVitals = newState.systemVitals;
+    if (newState.codexApiUsage) this.state.codexApiUsage = newState.codexApiUsage;
     this.emit('state:sync', newState);
   }
 

@@ -75,3 +75,27 @@ export interface Skill {
   usageCount: number;
   lastUsed: string;
 }
+
+// ─── System Vitals ─────────────────────────────────────────
+export interface VitalMetric {
+  percentage: number;
+  subtitle?: string;
+  details: { label: string; value: string }[];
+}
+
+export interface SystemVitalsData {
+  cpu: VitalMetric;
+  memory: VitalMetric;
+  disk: VitalMetric;
+  temperature: { value: number | null; unit: string; message?: string };
+  uptime: string;
+  hostname: string;
+}
+
+// ─── Codex API Usage ───────────────────────────────────────
+export interface CodexApiUsageData {
+  fiveHourPct: number;
+  weeklyPct: number;
+  codexTasks: number;
+  plan: string;
+}
