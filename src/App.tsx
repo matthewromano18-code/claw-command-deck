@@ -10,6 +10,8 @@ import TasksPage from "./pages/Tasks";
 import SettingsPage from "./pages/SettingsPage";
 import SkillsPage from "./pages/Skills";
 import NotFound from "./pages/NotFound";
+import AuthDialog from "./components/gateway/AuthDialog";
+import PairingDialog from "./components/gateway/PairingDialog";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ const App = () => (
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AuthDialog />
+          <PairingDialog />
         </div>
       </BrowserRouter>
     </TooltipProvider>

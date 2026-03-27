@@ -6,6 +6,7 @@ import AgentFlowChart from '@/components/dashboard/AgentFlowChart';
 import ExecutionFeed from '@/components/dashboard/ExecutionFeed';
 import CompletedTasks from '@/components/dashboard/CompletedTasks';
 import AgentDetailDrawer from '@/components/dashboard/AgentDetailDrawer';
+import GatewayStatusCard from '@/components/gateway/GatewayStatusCard';
 import { useState } from 'react';
 import { Agent, Task } from '@/data/types';
 
@@ -31,7 +32,10 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-4 space-y-3">
-      <CommandPrompt onSubmit={(prompt) => submitTask(prompt)} />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-3">
+        <CommandPrompt onSubmit={(prompt) => submitTask(prompt)} />
+        <GatewayStatusCard />
+      </div>
       <UsageBar metrics={metrics} />
       <QuickSettings settings={settings} onToggle={toggleSetting} />
 
