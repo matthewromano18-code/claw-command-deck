@@ -104,6 +104,7 @@ const AgentFlowChartInner = ({
     // ── Swarm Branches ──
     // Place swarm tree to the far right of all existing nodes
     const activeSessions = swarmSessions.filter((s) => s.status === 'active' || s.agents.length > 0);
+    console.log('[SWARM DEBUG]', { swarmSessions: swarmSessions.length, activeSessions: activeSessions.length, sessions: JSON.stringify(swarmSessions.map(s => ({ id: s.id, status: s.status, agents: s.agents.length, trigger: s.triggerAgentId }))) });
 
     if (activeSessions.length > 0) {
       // Find rightmost node X to position swarm branch clear of everything
