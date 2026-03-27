@@ -1,7 +1,5 @@
 import { useMissionControl } from '@/hooks/useMissionControl';
 import CommandPrompt from '@/components/dashboard/CommandPrompt';
-
-import QuickSettings from '@/components/dashboard/QuickSettings';
 import AgentFlowChart from '@/components/dashboard/AgentFlowChart';
 import ExecutionFeed from '@/components/dashboard/ExecutionFeed';
 import CompletedTasks from '@/components/dashboard/CompletedTasks';
