@@ -45,6 +45,7 @@ export interface MCState {
   chatMessages: ChatMessage[];
   systemVitals: SystemVitalsData;
   codexApiUsage: CodexApiUsageData;
+  swarmSessions: SwarmSession[];
 }
 
 const STORAGE_KEY = 'mission-control-state';
