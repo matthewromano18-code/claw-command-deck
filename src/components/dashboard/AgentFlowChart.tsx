@@ -1,6 +1,8 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
   Background,
   Controls,
   type Node,
@@ -26,13 +28,14 @@ const statusToAnimated = (status: AgentStatus) =>
 
 const nodeTypes = { agentNode: AgentNode, swarmNode: SwarmNode };
 
-const AgentFlowChart = ({
+const AgentFlowChartInner = ({
   agents,
   activeTaskPath = [],
   swarmSessions = [],
   onNodeClick,
   onSwarmNodeClick,
 }: AgentFlowChartProps) => {
+  const { fitView } = useReactFlow();
   const { nodes, edges } = useMemo(() => {
     const mainAgent = agents.find((a) => a.type === 'main');
     const departments = agents.filter((a) => a.type === 'department');
@@ -183,14 +186,19 @@ const AgentFlowChart = ({
     return { nodes: ns, edges: es };
   }, [agents, activeTaskPath, swarmSessions]);
 
+  // Re-fit when swarm nodes appear/change
+  const swarmNodeCount = swarmSessions.reduce((sum, s) => sum + s.agents.length, 0);
+  useEffect(() => {
+    if (swarmNodeCount > 0) {
+      const timer = setTimeout(() => fitView({ padding: 0.3, duration: 400 }), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [swarmNodeCount, fitView]);
+
   const handleNodeClick = useCallback((_: any, node: Node) => {
     if (node.type === 'swarmNode' && onSwarmNodeClick) {
-      // Extract sessionId and agentId from node id: swarm-{sessionId}-{agentId}
-      const parts = node.id.replace('swarm-', '').split('-');
-      // Session IDs have format swarm-{timestamp}-{rand}, so we need to reconstruct
       const data = node.data as any;
       if (data?.swarmAgent?.id) {
-        // find which session this belongs to
         const session = swarmSessions.find((s) =>
           s.agents.some((a) => a.id === data.swarmAgent.id)
         );
@@ -224,5 +232,11 @@ const AgentFlowChart = ({
     </div>
   );
 };
+
+const AgentFlowChart = (props: AgentFlowChartProps) => (
+  <ReactFlowProvider>
+    <AgentFlowChartInner {...props} />
+  </ReactFlowProvider>
+);
 
 export default AgentFlowChart;

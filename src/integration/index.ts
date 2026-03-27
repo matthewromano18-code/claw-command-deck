@@ -40,6 +40,132 @@ const bus = new MissionControlBus({
   swarmSessions: [],
 });
 
+// ─── Clear stale persisted state so demo swarm always shows ─
+bus.clearStorage();
+
+// ─── Wednesday Demo: Engineering kicks off a swarm ─────────
+setTimeout(() => {
+  // Engineering agent goes active
+  bus.setAgentStatus('dept-engineering', 'running');
+  bus.pushEvent({
+    taskId: 'demo-swarm',
+    agentId: 'dept-engineering',
+    agentName: 'Engineering',
+    type: 'processing',
+    message: 'Executing: clawteam spawn --parallel refactor',
+  });
+
+  const swarm = bus.startSwarm('dept-engineering', 'clawteam spawn --parallel refactor');
+
+  // Wave 1 — first two workers spawn immediately
+  setTimeout(() => {
+    const w1 = bus.spawnSwarmAgent(swarm.id, {
+      name: 'Code Analyzer',
+      parentId: 'dept-engineering',
+      status: 'running',
+      currentTask: 'Scanning codebase for dead imports',
+    });
+
+    const w2 = bus.spawnSwarmAgent(swarm.id, {
+      name: 'Test Runner',
+      parentId: 'dept-engineering',
+      status: 'running',
+      currentTask: 'Running full test suite',
+    });
+
+    bus.pushEvent({
+      taskId: 'demo-swarm',
+      agentId: 'dept-engineering',
+      agentName: 'Engineering',
+      type: 'delegated',
+      message: 'Spawned Code Analyzer + Test Runner',
+    });
+
+    // Wave 2 — sub-agents spawn under workers
+    setTimeout(() => {
+      if (!w1 || !w2) return;
+
+      bus.spawnSwarmAgent(swarm.id, {
+        name: 'Lint Fixer',
+        parentId: w1.id,
+        status: 'running',
+        currentTask: 'Auto-fixing 23 lint violations',
+      });
+
+      bus.spawnSwarmAgent(swarm.id, {
+        name: 'Import Cleaner',
+        parentId: w1.id,
+        status: 'spawning',
+        currentTask: 'Removing 8 unused imports',
+      });
+
+      bus.updateSwarmAgent(swarm.id, w2.id, {
+        status: 'running',
+        currentTask: 'Running 147 unit tests…',
+      });
+
+      bus.pushEvent({
+        taskId: 'demo-swarm',
+        agentId: w1.id,
+        agentName: 'Code Analyzer',
+        type: 'delegated',
+        message: 'Spawned Lint Fixer + Import Cleaner',
+      });
+
+      // Wave 3 — results come in
+      setTimeout(() => {
+        bus.updateSwarmAgent(swarm.id, w1.id, {
+          status: 'completed',
+          currentTask: 'Analysis complete — 31 issues found',
+        });
+
+        bus.updateSwarmAgent(swarm.id, w2.id, {
+          status: 'completed',
+          currentTask: '147/147 tests passed ✓',
+        });
+
+        bus.pushEvent({
+          taskId: 'demo-swarm',
+          agentId: w2.id,
+          agentName: 'Test Runner',
+          type: 'completed',
+          message: 'All 147 tests passed',
+        });
+
+        // Wave 4 — sub-agents finish, one errors
+        setTimeout(() => {
+          const agents = bus.getState().swarmSessions
+            .find(s => s.id === swarm.id)?.agents || [];
+          const lintFixer = agents.find(a => a.name === 'Lint Fixer');
+          const importCleaner = agents.find(a => a.name === 'Import Cleaner');
+
+          if (lintFixer) {
+            bus.updateSwarmAgent(swarm.id, lintFixer.id, {
+              status: 'completed',
+              currentTask: 'Fixed 23/23 violations',
+            });
+          }
+          if (importCleaner) {
+            bus.updateSwarmAgent(swarm.id, importCleaner.id, {
+              status: 'error',
+              currentTask: 'Failed on circular dependency',
+              error: 'Circular import detected: utils → helpers → utils',
+            });
+          }
+
+          bus.pushEvent({
+            taskId: 'demo-swarm',
+            agentId: 'dept-engineering',
+            agentName: 'Engineering',
+            type: 'completed',
+            message: 'Swarm finished — 3 completed, 1 error',
+          });
+        }, 4000);
+      }, 3500);
+    }, 2500);
+  }, 1000);
+}, 800);
+
 // ─── Expose on Window for External Agent Access ────────────
 const api = {
   // State
