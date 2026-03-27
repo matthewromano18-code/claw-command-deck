@@ -52,6 +52,8 @@ const Dashboard = () => {
         </div>
       </div>
 
+      <CodexUsageTracker />
+
       {selectedAgent && (
         <>
           <div
