@@ -38,7 +38,8 @@ const Dashboard = () => {
         <GatewayStatusCard />
       </div>
       <CodexUsageTracker />
-      
+      <SystemVitals />
+      <CodexApiUsage />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
         <AgentFlowChart
