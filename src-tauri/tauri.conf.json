@@ -1,6 +1,6 @@
 {
-  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "Mission Control",
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+  "productName": "Nexxen Mission Control",
   "version": "1.0.0",
   "identifier": "com.nexxen.mission-control",
   "build": {
@@ -10,11 +10,10 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
-    "title": "Mission Control",
     "windows": [
       {
         "label": "main",
-        "title": "Mission Control",
+        "title": "Nexxen Mission Control",
         "width": 1400,
         "height": 900,
         "minWidth": 900,
