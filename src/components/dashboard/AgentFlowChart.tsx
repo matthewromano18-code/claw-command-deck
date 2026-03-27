@@ -28,13 +28,14 @@ const statusToAnimated = (status: AgentStatus) =>
 
 const nodeTypes = { agentNode: AgentNode, swarmNode: SwarmNode };
 
-const AgentFlowChart = ({
+const AgentFlowChartInner = ({
   agents,
   activeTaskPath = [],
   swarmSessions = [],
   onNodeClick,
   onSwarmNodeClick,
 }: AgentFlowChartProps) => {
+  const { fitView } = useReactFlow();
   const { nodes, edges } = useMemo(() => {
     const mainAgent = agents.find((a) => a.type === 'main');
     const departments = agents.filter((a) => a.type === 'department');
