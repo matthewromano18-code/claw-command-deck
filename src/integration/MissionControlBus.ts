@@ -23,6 +23,7 @@ export type MCEventType =
   | 'swarm:agent-spawn'
   | 'swarm:agent-update'
   | 'swarm:complete'
+  | 'agent:thought'
   | 'state:reset'
   | 'state:sync';
 
