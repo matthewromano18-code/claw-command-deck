@@ -7,6 +7,7 @@ import ExecutionFeed from '@/components/dashboard/ExecutionFeed';
 import CompletedTasks from '@/components/dashboard/CompletedTasks';
 import AgentDetailDrawer from '@/components/dashboard/AgentDetailDrawer';
 import GatewayStatusCard from '@/components/gateway/GatewayStatusCard';
+import CodexUsageTracker from '@/components/dashboard/CodexUsageTracker';
 import { useState } from 'react';
 import { Agent, Task } from '@/data/types';
 
@@ -50,6 +51,8 @@ const Dashboard = () => {
           <CompletedTasks tasks={tasks} onTaskClick={handleTaskClick} />
         </div>
       </div>
+
+      <CodexUsageTracker />
 
       {selectedAgent && (
         <>
