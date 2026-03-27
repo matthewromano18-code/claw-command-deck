@@ -156,7 +156,7 @@ function runAgencyDemo() {
     bus.updateAgent('main-agent', { status: 'running' });
     bus.sendChatMessage('🚀 I\'m online. Received directive: "Build full product for Q3 launch." Let me spin up the agency.', { agentName: 'Main Agent' });
 
-    const masterTask = bus.submitTask({
+    bus.submitTask({
       prompt: 'Q3 Product Launch — Full agency deployment',
       status: 'active',
       priority: 'critical',
