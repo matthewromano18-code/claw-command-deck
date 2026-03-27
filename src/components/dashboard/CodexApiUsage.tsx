@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Zap } from 'lucide-react';
+import { useMissionControl } from '@/hooks/useMissionControl';
 
 interface UsageBarProps {
   label: string;
@@ -23,19 +24,9 @@ const UsageBar = ({ label, percentage }: UsageBarProps) => (
   </div>
 );
 
-interface StatRowProps {
-  label: string;
-  value: string | number;
-}
-
-const StatRow = ({ label, value }: StatRowProps) => (
-  <div className="flex items-center justify-between py-1.5 border-b border-border/40 last:border-0">
-    <span className="text-xs text-muted-foreground">{label}</span>
-    <span className="text-xs font-mono font-semibold text-foreground">{value}</span>
-  </div>
-);
-
 export default function CodexApiUsage() {
+  const { codexApiUsage } = useMissionControl('codex-api:update');
+
   return (
     <Card className="glass-panel">
       <CardContent className="p-4 space-y-4">
@@ -43,17 +34,18 @@ export default function CodexApiUsage() {
           <Zap className="w-4 h-4 text-warning" />
           <div>
             <span className="text-sm font-semibold text-foreground">Codex (OpenAI)</span>
-            <p className="text-[11px] text-muted-foreground">ChatGPT Plus</p>
+            <p className="text-[11px] text-muted-foreground">{codexApiUsage.plan}</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <UsageBar label="5-Hour Usage" percentage={0} />
-          <UsageBar label="Weekly Usage" percentage={0} />
+          <UsageBar label="5-Hour Usage" percentage={codexApiUsage.fiveHourPct} />
+          <UsageBar label="Weekly Usage" percentage={codexApiUsage.weeklyPct} />
         </div>
 
-        <div>
-          <StatRow label="Codex Tasks" value={0} />
+        <div className="flex items-center justify-between py-1.5 border-t border-border/40">
+          <span className="text-xs text-muted-foreground">Codex Tasks</span>
+          <span className="text-xs font-mono font-semibold text-foreground">{codexApiUsage.codexTasks}</span>
         </div>
       </CardContent>
     </Card>

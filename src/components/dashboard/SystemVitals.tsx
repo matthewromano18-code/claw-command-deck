@@ -1,12 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Cpu, HardDrive, Thermometer, MemoryStick } from 'lucide-react';
+import { useMissionControl } from '@/hooks/useMissionControl';
+import { VitalMetric } from '@/data/types';
 
 interface VitalBarProps {
   label: string;
   icon: React.ElementType;
-  percentage: number;
-  details: { label: string; value: string }[];
-  subtitle?: string;
+  metric: VitalMetric;
   statusColor?: 'success' | 'warning' | 'destructive';
 }
 
@@ -16,10 +16,8 @@ const getBarColor = (pct: number) => {
   return 'bg-success';
 };
 
-const VitalBar = ({ label, icon: Icon, percentage, details, subtitle, statusColor }: VitalBarProps) => {
-  const barColor = statusColor
-    ? `bg-${statusColor}`
-    : getBarColor(percentage);
+const VitalBar = ({ label, icon: Icon, metric, statusColor }: VitalBarProps) => {
+  const barColor = statusColor ? `bg-${statusColor}` : getBarColor(metric.percentage);
 
   return (
     <Card className="glass-panel flex-1 min-w-[180px]">
@@ -30,26 +28,24 @@ const VitalBar = ({ label, icon: Icon, percentage, details, subtitle, statusColo
             <span className="text-sm font-semibold text-foreground">{label}</span>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-lg font-bold font-mono text-foreground">{percentage}%</span>
+            <span className="text-lg font-bold font-mono text-foreground">{metric.percentage}%</span>
             <span className="text-[11px] text-muted-foreground">used</span>
           </div>
         </div>
 
-        {subtitle && (
-          <span className="text-[11px] text-muted-foreground">{subtitle}</span>
+        {metric.subtitle && (
+          <span className="text-[11px] text-muted-foreground">{metric.subtitle}</span>
         )}
 
-        {/* Progress bar */}
         <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-700 ${barColor}`}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
+            style={{ width: `${Math.min(metric.percentage, 100)}%` }}
           />
         </div>
 
-        {/* Detail metrics */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          {details.map((d) => (
+          {metric.details.map((d) => (
             <div key={d.label} className="text-center">
               <span className="text-xs font-mono font-semibold text-foreground">{d.value}</span>
               <p className="text-[10px] text-muted-foreground leading-tight">{d.label}</p>
@@ -61,41 +57,10 @@ const VitalBar = ({ label, icon: Icon, percentage, details, subtitle, statusColo
   );
 };
 
-const TemperatureCard = () => (
-  <Card className="glass-panel flex-1 min-w-[180px]">
-    <CardContent className="p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <Thermometer className="w-4 h-4 text-warning" />
-        <span className="text-sm font-semibold text-foreground">Temperature</span>
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold font-mono text-foreground">—</span>
-        <span className="text-sm text-muted-foreground">°C</span>
-      </div>
-      <p className="text-[11px] text-muted-foreground">Requires elevated access</p>
-    </CardContent>
-  </Card>
-);
-
-// Mock system data
-const MOCK_VITALS = {
-  cpu: { percentage: 42, subtitle: 'Apple M4', details: [
-    { label: 'user', value: '26.3%' },
-    { label: 'sys', value: '15.8%' },
-    { label: 'idle', value: '57.9%' },
-    { label: 'cores', value: '10' },
-  ]},
-  memory: { percentage: 74, details: [
-    { label: 'used of total', value: '11.9 GB of 16.0 GB' },
-    { label: 'available', value: '4.1 GB' },
-  ]},
-  disk: { percentage: 34, details: [
-    { label: 'used of total', value: '157.2 GB of 460.4 GB' },
-    { label: 'available', value: '266.4 GB' },
-  ]},
-};
-
 export default function SystemVitals() {
+  const { systemVitals } = useMissionControl('vitals:update');
+  const { cpu, memory, disk, temperature, uptime, hostname } = systemVitals;
+
   return (
     <Card className="glass-panel">
       <CardContent className="p-4">
@@ -103,31 +68,33 @@ export default function SystemVitals() {
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">System Vitals</span>
+            {hostname && (
+              <span className="text-[11px] text-primary font-mono bg-primary/10 px-2 py-0.5 rounded">{hostname}</span>
+            )}
           </div>
-          <span className="text-[11px] text-muted-foreground">Uptime: 4 days</span>
+          <span className="text-[11px] text-muted-foreground">Uptime: {uptime}</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <VitalBar
-            icon={Cpu}
-            label="CPU"
-            percentage={MOCK_VITALS.cpu.percentage}
-            subtitle={MOCK_VITALS.cpu.subtitle}
-            details={MOCK_VITALS.cpu.details}
-          />
-          <VitalBar
-            icon={MemoryStick}
-            label="Memory"
-            percentage={MOCK_VITALS.memory.percentage}
-            details={MOCK_VITALS.memory.details}
-          />
-          <VitalBar
-            icon={HardDrive}
-            label="Disk"
-            percentage={MOCK_VITALS.disk.percentage}
-            details={MOCK_VITALS.disk.details}
-            statusColor="success"
-          />
-          <TemperatureCard />
+          <VitalBar icon={Cpu} label="CPU" metric={cpu} />
+          <VitalBar icon={MemoryStick} label="Memory" metric={memory} />
+          <VitalBar icon={HardDrive} label="Disk" metric={disk} statusColor="success" />
+          <Card className="glass-panel flex-1 min-w-[180px]">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Thermometer className="w-4 h-4 text-warning" />
+                <span className="text-sm font-semibold text-foreground">Temperature</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-bold font-mono text-foreground">
+                  {temperature.value !== null ? temperature.value : '—'}
+                </span>
+                <span className="text-sm text-muted-foreground">{temperature.unit}</span>
+              </div>
+              {temperature.message && (
+                <p className="text-[11px] text-muted-foreground">{temperature.message}</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </CardContent>
     </Card>
