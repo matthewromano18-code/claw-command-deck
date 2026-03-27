@@ -155,10 +155,14 @@ function runAgencyDemo() {
     bus.sendChatMessage('🧠 Initializing Main Agent...', { agentName: 'System' });
     bus.addAgent({ ...mainAgent, status: 'thinking', queueCount: 0 });
     log('main-agent', 'Main Agent', 'Booting up — analyzing incoming project', 'received');
+    think('main-agent', 'Main Agent', 'Analyzing directive: "Build full product for Q3 launch"', 'plan');
 
-    await t(1500);
+    await t(800);
+    think('main-agent', 'Main Agent', 'Breaking down into departments: Engineering, Content, Research, Operations');
+    await t(700);
 
     bus.updateAgent('main-agent', { status: 'running' });
+    think('main-agent', 'Main Agent', 'Agency structure planned. Need 4 departments, 7 specialists. Deploying now.', 'action');
     bus.sendChatMessage('🚀 I\'m online. Received directive: "Build full product for Q3 launch." Let me spin up the agency.', { agentName: 'Main Agent' });
 
     bus.submitTask({
