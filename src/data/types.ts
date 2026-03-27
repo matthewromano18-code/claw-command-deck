@@ -92,6 +92,29 @@ export interface SystemVitalsData {
   hostname: string;
 }
 
+// ─── Swarm ─────────────────────────────────────────────────
+export type SwarmAgentStatus = 'spawning' | 'running' | 'idle' | 'completed' | 'error';
+
+export interface SwarmAgent {
+  id: string;
+  name: string;
+  parentId: string; // swarm-internal parent (trigger agent or another swarm agent)
+  status: SwarmAgentStatus;
+  currentTask: string;
+  spawnedAt: string;
+  completedAt?: string;
+  error?: string;
+}
+
+export interface SwarmSession {
+  id: string;
+  triggerAgentId: string; // the main hierarchy agent that started the swarm
+  command: string;
+  startedAt: string;
+  status: 'active' | 'completed' | 'failed';
+  agents: SwarmAgent[];
+}
+
 // ─── Codex API Usage ───────────────────────────────────────
 export interface CodexApiUsageData {
   fiveHourPct: number;
