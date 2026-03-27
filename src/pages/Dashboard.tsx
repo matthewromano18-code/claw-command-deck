@@ -6,6 +6,7 @@ import AgentFlowChart from '@/components/dashboard/AgentFlowChart';
 import ExecutionFeed from '@/components/dashboard/ExecutionFeed';
 import CompletedTasks from '@/components/dashboard/CompletedTasks';
 import AgentDetailDrawer from '@/components/dashboard/AgentDetailDrawer';
+import GatewayStatusCard from '@/components/gateway/GatewayStatusCard';
 import { useState } from 'react';
 import { Agent, Task } from '@/data/types';
 
