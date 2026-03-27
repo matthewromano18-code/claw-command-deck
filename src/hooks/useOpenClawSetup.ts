@@ -1,7 +1,8 @@
 // ─── useOpenClawSetup Hook ─────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { setupDetector } from '@/services/openclaw';
-import type { SetupSnapshot, SetupState } from '@/services/openclaw/setup-detector';
+import type { SetupSnapshot } from '@/services/openclaw/setup-detector';
+import type { SetupState } from '@/services/openclaw/health-checker';
 import type { HealthReport } from '@/services/openclaw/health-checker';
 
 export function useOpenClawSetup() {
