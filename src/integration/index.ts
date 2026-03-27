@@ -362,6 +362,7 @@ function runAgencyDemo() {
       await t(700);
 
       const parentDept = departments.find((d) => d.id === spec.parentId);
+      think(spec.id, spec.name, `Workload too large for solo execution. Spawning swarm: ${cfg.command}`, 'plan');
       bus.sendChatMessage(`⚡ **${spec.name}** spawning swarm: \`${cfg.command}\``, { agentName: parentDept?.name || 'Department' });
       log(spec.id, spec.name, `Workload critical — spawning swarm`, 'processing');
 
