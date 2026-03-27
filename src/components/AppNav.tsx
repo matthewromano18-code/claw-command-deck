@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Network, ListTodo, Settings, Sparkles, MessageCircle } from 'lucide-react';
 import ChatPanel from './ChatPanel';
-import nexxenLogo from '@/assets/nexxen-logo.png';
+
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -22,7 +22,7 @@ const AppNav = () => {
         <div className="max-w-[1600px] mx-auto px-4 h-12 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2.5">
-              <img src={nexxenLogo} alt="Nexxen" className="h-5 w-auto" />
+              <span className="font-semibold text-foreground tracking-tight text-lg">Nexxen</span>
               <div className="w-px h-4 bg-border" />
               <span className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">Mission Control</span>
             </div>
