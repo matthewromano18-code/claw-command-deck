@@ -19,6 +19,10 @@ export type MCEventType =
   | 'chat:clear'
   | 'vitals:update'
   | 'codex-api:update'
+  | 'swarm:start'
+  | 'swarm:agent-spawn'
+  | 'swarm:agent-update'
+  | 'swarm:complete'
   | 'state:reset'
   | 'state:sync';
 
