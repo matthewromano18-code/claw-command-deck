@@ -63,11 +63,28 @@ const AgentFlowChartInner = ({
     const departments = agents.filter((a) => a.type === 'department');
     const specialists = agents.filter((a) => a.type === 'specialist');
 
-    const deptSpacing = 240;
-    const deptStartX = -((departments.length - 1) * deptSpacing) / 2;
-
     const ns: Node[] = [];
     const es: Edge[] = [];
+
+    // ── Calculate dynamic department spacing ──
+    // Each department's width is determined by its specialist count
+    const NODE_WIDTH = 160;
+    const SPEC_GAP = 30; // gap between specialist nodes
+    const DEPT_GAP = 60; // gap between department columns
+
+    const deptWidths = departments.map((dept) => {
+      const specCount = specialists.filter((s) => s.parentId === dept.id).length;
+      return Math.max(NODE_WIDTH, specCount * NODE_WIDTH + (specCount - 1) * SPEC_GAP);
+    });
+    const totalWidth = deptWidths.reduce((sum, w) => sum + w, 0) + (departments.length - 1) * DEPT_GAP;
+
+    // Build cumulative X positions so each dept is centered over its specialists
+    const deptPositions: number[] = [];
+    let cursor = -totalWidth / 2;
+    deptWidths.forEach((w, i) => {
+      deptPositions.push(cursor + w / 2);
+      cursor += w + DEPT_GAP;
+    });
 
     // ── Main Agent ──
     if (mainAgent) {
@@ -81,15 +98,15 @@ const AgentFlowChartInner = ({
       });
     }
 
-    // ── Departments ──
+    // ── Departments & Specialists ──
     departments.forEach((dept, i) => {
-      const x = deptStartX + i * deptSpacing;
+      const deptX = deptPositions[i];
       const onPath = activeTaskPath.includes(dept.id);
 
       ns.push({
         id: dept.id,
         type: 'agentNode',
-        position: { x, y: 180 },
+        position: { x: deptX, y: 180 },
         data: { agent: dept, isOnPath: onPath },
         sourcePosition: Position.Bottom,
         targetPosition: Position.Top,
@@ -107,19 +124,19 @@ const AgentFlowChartInner = ({
         },
       });
 
-      // ── Specialists ──
+      // ── Specialists — centered under their department ──
       const deptSpecs = specialists.filter((s) => s.parentId === dept.id);
-      const specSpacing = 190;
-      const specStartX = x - ((deptSpecs.length - 1) * specSpacing) / 2;
+      const specTotalWidth = deptSpecs.length * NODE_WIDTH + (deptSpecs.length - 1) * SPEC_GAP;
+      const specStartX = deptX - specTotalWidth / 2 + NODE_WIDTH / 2;
 
       deptSpecs.forEach((spec, j) => {
-        const sx = specStartX + j * specSpacing;
+        const sx = specStartX + j * (NODE_WIDTH + SPEC_GAP);
         const specOnPath = activeTaskPath.includes(spec.id);
 
         ns.push({
           id: spec.id,
           type: 'agentNode',
-          position: { x: sx, y: 370 },
+          position: { x: sx, y: 380 },
           data: { agent: spec, isOnPath: specOnPath },
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
