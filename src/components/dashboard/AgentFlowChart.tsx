@@ -102,114 +102,79 @@ const AgentFlowChartInner = ({
     });
 
     // ── Swarm Branches ──
+    // Place swarm tree to the far right of all existing nodes
     const activeSessions = swarmSessions.filter((s) => s.status === 'active' || s.agents.length > 0);
 
-    activeSessions.forEach((session) => {
-      const triggerNode = ns.find((n) => n.id === session.triggerAgentId);
-      if (!triggerNode) return;
+    if (activeSessions.length > 0) {
+      // Find rightmost node X to position swarm branch clear of everything
+      const maxX = Math.max(...ns.map((n) => n.position.x), 0);
+      const swarmBaseX = maxX + 350;
 
-      const baseX = triggerNode.position.x;
-      const baseY = triggerNode.position.y;
+      activeSessions.forEach((session) => {
+        const triggerNode = ns.find((n) => n.id === session.triggerAgentId);
+        if (!triggerNode) return;
 
-      // Find the leader (first agent whose parentId is the trigger)
-      const leader = session.agents.find(
-        (a) => a.parentId === session.triggerAgentId && a.role === 'leader'
-      ) || session.agents.find((a) => a.parentId === session.triggerAgentId);
+        const triggerY = triggerNode.position.y;
 
-      if (!leader) return;
+        // Find the leader
+        const leader = session.agents.find(
+          (a) => a.parentId === session.triggerAgentId && a.role === 'leader'
+        ) || session.agents.find((a) => a.parentId === session.triggerAgentId);
 
-      // Workers = agents whose parent is the leader
-      const workers = session.agents.filter((a) => a.parentId === leader.id);
+        if (!leader) return;
 
-      // Sub-workers = anyone deeper
-      const childMap = new Map<string, typeof session.agents>();
-      session.agents.forEach((a) => {
-        if (!childMap.has(a.parentId)) childMap.set(a.parentId, []);
-        childMap.get(a.parentId)!.push(a);
-      });
+        const workers = session.agents.filter((a) => a.parentId === leader.id);
 
-      // Place leader directly below the trigger agent
-      const leaderNodeId = `swarm-${session.id}-${leader.id}`;
-      ns.push({
-        id: leaderNodeId,
-        type: 'swarmNode',
-        position: { x: baseX, y: baseY + 140 },
-        data: { swarmAgent: leader, isRoot: true },
-        sourcePosition: Position.Bottom,
-        targetPosition: Position.Top,
-      });
-
-      // Edge: trigger → leader
-      es.push({
-        id: `e-swarm-trigger-${leader.id}`,
-        source: session.triggerAgentId,
-        target: leaderNodeId,
-        animated: leader.status === 'running' || leader.status === 'spawning',
-        style: {
-          stroke: 'hsl(218, 68%, 50%)',
-          strokeWidth: 2,
-        },
-      });
-
-      // Place workers fanning out below the leader
-      const workerSpacing = 190;
-      const workerStartX = baseX - ((workers.length - 1) * workerSpacing) / 2;
-
-      workers.forEach((worker, i) => {
-        const workerNodeId = `swarm-${session.id}-${worker.id}`;
-        const wx = workerStartX + i * workerSpacing;
-        const wy = baseY + 280;
-
+        // Leader — same Y as trigger, offset to the right
+        const leaderNodeId = `swarm-${session.id}-${leader.id}`;
         ns.push({
-          id: workerNodeId,
+          id: leaderNodeId,
           type: 'swarmNode',
-          position: { x: wx, y: wy },
-          data: { swarmAgent: worker, isRoot: false },
+          position: { x: swarmBaseX, y: triggerY },
+          data: { swarmAgent: leader, isRoot: true },
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
         });
 
-        // Edge: leader → worker
+        // Edge: trigger → leader (horizontal branch)
         es.push({
-          id: `e-swarm-${session.id}-${worker.id}`,
-          source: leaderNodeId,
-          target: workerNodeId,
-          animated: worker.status === 'running' || worker.status === 'spawning',
+          id: `e-swarm-trigger-${leader.id}`,
+          source: session.triggerAgentId,
+          target: leaderNodeId,
+          animated: leader.status === 'running' || leader.status === 'spawning',
           style: {
-            stroke: worker.status === 'error'
-              ? 'hsl(0, 55%, 50%)'
-              : worker.status === 'running' || worker.status === 'spawning'
-              ? 'hsl(218, 68%, 50%)'
-              : 'hsl(var(--border))',
-            strokeDasharray: '5 4',
+            stroke: 'hsl(218, 68%, 50%)',
+            strokeWidth: 2,
           },
         });
 
-        // Sub-workers below each worker
-        const subWorkers = childMap.get(worker.id) || [];
-        const subSpacing = 170;
-        const subStartX = wx - ((subWorkers.length - 1) * subSpacing) / 2;
+        // Workers fan out below the leader
+        const workerSpacing = 200;
+        const workerStartX = swarmBaseX - ((workers.length - 1) * workerSpacing) / 2;
 
-        subWorkers.forEach((sub, si) => {
-          const subNodeId = `swarm-${session.id}-${sub.id}`;
+        workers.forEach((worker, i) => {
+          const workerNodeId = `swarm-${session.id}-${worker.id}`;
+          const wx = workerStartX + i * workerSpacing;
+          const wy = triggerY + 160;
+
           ns.push({
-            id: subNodeId,
+            id: workerNodeId,
             type: 'swarmNode',
-            position: { x: subStartX + si * subSpacing, y: baseY + 410 },
-            data: { swarmAgent: sub, isRoot: false },
+            position: { x: wx, y: wy },
+            data: { swarmAgent: worker, isRoot: false },
             sourcePosition: Position.Bottom,
             targetPosition: Position.Top,
           });
 
           es.push({
-            id: `e-swarm-${session.id}-${sub.id}`,
-            source: workerNodeId,
-            target: subNodeId,
-            animated: sub.status === 'running' || sub.status === 'spawning',
+            id: `e-swarm-${session.id}-${worker.id}`,
+            source: leaderNodeId,
+            target: workerNodeId,
+            animated: worker.status === 'running' || worker.status === 'spawning',
             style: {
-              stroke: sub.status === 'error'
+              stroke: worker.status === 'error'
                 ? 'hsl(0, 55%, 50%)'
-                : sub.status === 'running' || sub.status === 'spawning'
+                : worker.status === 'running' || worker.status === 'spawning'
                 ? 'hsl(218, 68%, 50%)'
                 : 'hsl(var(--border))',
               strokeDasharray: '5 4',
@@ -217,7 +182,7 @@ const AgentFlowChartInner = ({
           });
         });
       });
-    });
+    }
 
     return { nodes: ns, edges: es };
   }, [agents, activeTaskPath, swarmSessions]);
