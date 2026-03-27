@@ -6,6 +6,8 @@ import CompletedTasks from '@/components/dashboard/CompletedTasks';
 import AgentDetailDrawer from '@/components/dashboard/AgentDetailDrawer';
 import GatewayStatusCard from '@/components/gateway/GatewayStatusCard';
 import CodexUsageTracker from '@/components/dashboard/CodexUsageTracker';
+import SystemVitals from '@/components/dashboard/SystemVitals';
+import CodexApiUsage from '@/components/dashboard/CodexApiUsage';
 import { useState } from 'react';
 import { Agent, Task } from '@/data/types';
 
@@ -36,7 +38,8 @@ const Dashboard = () => {
         <GatewayStatusCard />
       </div>
       <CodexUsageTracker />
-      
+      <SystemVitals />
+      <CodexApiUsage />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
         <AgentFlowChart
