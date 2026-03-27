@@ -184,6 +184,7 @@ const AgentFlowChartInner = ({
       });
     }
 
+    console.log('[FlowChart] nodes:', ns.length, 'edges:', es.length, 'swarm nodes:', ns.filter(n => n.type === 'swarmNode').length);
     return { nodes: ns, edges: es };
   }, [agents, activeTaskPath, swarmSessions]);
 
