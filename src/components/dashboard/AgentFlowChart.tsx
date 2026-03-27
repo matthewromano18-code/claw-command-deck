@@ -190,11 +190,12 @@ const AgentFlowChartInner = ({
   // Re-fit when swarm nodes appear/change
   const swarmNodeCount = swarmSessions.reduce((sum, s) => sum + s.agents.length, 0);
   useEffect(() => {
-    if (swarmNodeCount > 0) {
-      const timer = setTimeout(() => fitView({ padding: 0.3, duration: 400 }), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [swarmNodeCount, fitView]);
+    // Delay to let React Flow measure new nodes
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.25, duration: 500 });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [swarmNodeCount, nodes.length, fitView]);
 
   const handleNodeClick = useCallback((_: any, node: Node) => {
     if (node.type === 'swarmNode' && onSwarmNodeClick) {
