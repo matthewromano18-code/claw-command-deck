@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Bot, User, Minimize2 } from 'lucide-react';
+import { X, Send, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from '@/data/chatTypes';
 import bus from '@/integration';
@@ -10,33 +10,39 @@ interface ChatPanelProps {
   onClose: () => void;
 }
 
-const initialMessages: ChatMessage[] = [
-  {
-    id: 'sys-1',
-    role: 'agent',
-    content: "👋 Hey! I'm your **Main Agent**. I'll post task results here as they complete. You can also ask me questions or give me instructions directly.",
-    timestamp: new Date().toISOString(),
-    agentName: 'Main Agent',
-  },
-];
+const welcomeMsg: ChatMessage = {
+  id: 'sys-1',
+  role: 'agent',
+  content: "👋 Hey! I'm your **Main Agent**. I'll post task results here as they complete. You can also ask me questions or give me instructions directly.",
+  timestamp: new Date().toISOString(),
+  agentName: 'Main Agent',
+};
 
 const ChatPanel = ({ open, onClose }: ChatPanelProps) => {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([welcomeMsg]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Subscribe to task completions and push results into chat
+  // Listen for agent-pushed chat messages
+  useEffect(() => {
+    const unsub = bus.on('chat:message', (event) => {
+      setMessages((prev) => [...prev, event.payload as ChatMessage]);
+    });
+    return unsub;
+  }, []);
+
+  // Listen for task completions → auto-post to chat
   useEffect(() => {
     const unsub = bus.on('task:complete', (event) => {
       const state = bus.getState();
       const task = state.tasks.find((t) => t.id === event.payload.taskId);
       if (task) {
         const msg: ChatMessage = {
-          id: `agent-${Date.now()}`,
+          id: `auto-${Date.now()}`,
           role: 'agent',
-          content: `✅ **Task Complete**\n\n> ${task.prompt}\n\n**Result:** ${task.result || 'Done'}\n\n${task.confidence ? `**Confidence:** ${(task.confidence * 100).toFixed(0)}%` : ''}${task.duration ? ` · **Duration:** ${Math.floor(task.duration / 60)}m ${task.duration % 60}s` : ''}`,
+          content: `✅ **Task Complete**\n\n> ${task.prompt}\n\n**Result:** ${task.result || 'Done'}${task.confidence ? `\n**Confidence:** ${(task.confidence * 100).toFixed(0)}%` : ''}${task.duration ? ` · **Duration:** ${Math.floor(task.duration / 60)}m ${task.duration % 60}s` : ''}`,
           timestamp: new Date().toISOString(),
           taskId: task.id,
           agentName: 'Main Agent',
@@ -47,12 +53,18 @@ const ChatPanel = ({ open, onClose }: ChatPanelProps) => {
     return unsub;
   }, []);
 
-  // Auto-scroll
+  // Listen for chat clear
+  useEffect(() => {
+    const unsub = bus.on('chat:clear', () => {
+      setMessages([welcomeMsg]);
+    });
+    return unsub;
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input when opened
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
   }, [open]);
@@ -68,7 +80,6 @@ const ChatPanel = ({ open, onClose }: ChatPanelProps) => {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
 
-    // Simulate agent thinking + reply
     setIsTyping(true);
     setTimeout(() => {
       const reply: ChatMessage = {
@@ -130,36 +141,19 @@ const ChatPanel = ({ open, onClose }: ChatPanelProps) => {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 scrollbar-thin">
               {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-                >
-                  <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                      msg.role === 'agent' ? 'bg-primary/15' : 'bg-secondary'
-                    }`}
-                  >
-                    {msg.role === 'agent' ? (
-                      <Bot className="w-3 h-3 text-primary" />
-                    ) : (
-                      <User className="w-3 h-3 text-muted-foreground" />
-                    )}
+                <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${msg.role === 'agent' ? 'bg-primary/15' : 'bg-secondary'}`}>
+                    {msg.role === 'agent' ? <Bot className="w-3 h-3 text-primary" /> : <User className="w-3 h-3 text-muted-foreground" />}
                   </div>
-                  <div
-                    className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
-                      msg.role === 'agent'
-                        ? 'bg-secondary/50 text-foreground rounded-tl-sm'
-                        : 'bg-primary/15 text-foreground rounded-tr-sm'
-                    }`}
-                  >
+                  <div className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${msg.role === 'agent' ? 'bg-secondary/50 text-foreground rounded-tl-sm' : 'bg-primary/15 text-foreground rounded-tr-sm'}`}>
+                    {msg.agentName && msg.role === 'agent' && (
+                      <span className="text-[9px] font-semibold text-primary block mb-0.5">{msg.agentName}</span>
+                    )}
                     <div className="prose prose-sm prose-invert max-w-none [&_p]:m-0 [&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_blockquote]:my-1 [&_blockquote]:pl-2 [&_blockquote]:border-primary/30 [&_strong]:text-foreground">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                     <span className="text-[9px] text-muted-foreground mt-1 block">
-                      {new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>

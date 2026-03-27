@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Search, Filter, Zap, Clock, Hash, ToggleLeft, ToggleRight } from 'lucide-react';
-import { mockSkills } from '@/data/mockSkills';
-import { mockAgents } from '@/data/mockData';
+import { useMissionControl } from '@/hooks/useMissionControl';
 import { Skill } from '@/data/types';
 
 const categoryColors: Record<string, string> = {
@@ -13,7 +12,7 @@ const categoryColors: Record<string, string> = {
 };
 
 const SkillsPage = () => {
-  const [skills, setSkills] = useState<Skill[]>(mockSkills);
+  const { skills, agents, bus } = useMissionControl();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
@@ -38,11 +37,7 @@ const SkillsPage = () => {
   const totalUsage = skills.reduce((sum, s) => sum + s.usageCount, 0);
 
   const toggleSkill = (id: string) => {
-    setSkills((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, status: s.status === 'active' ? 'inactive' : 'active' } : s
-      )
-    );
+    bus.toggleSkill(id);
   };
 
   return (
@@ -106,7 +101,7 @@ const SkillsPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {filtered.map((skill, i) => {
           const linkedAgents = skill.agentIds
-            .map((id) => mockAgents.find((a) => a.id === id))
+            .map((id) => agents.find((a) => a.id === id))
             .filter(Boolean);
 
           return (

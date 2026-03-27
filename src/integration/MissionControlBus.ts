@@ -1,4 +1,5 @@
-import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus } from '@/data/types';
+import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus, Skill } from '@/data/types';
+import { ChatMessage } from '@/data/chatTypes';
 
 // ─── Event Types ───────────────────────────────────────────
 export type MCEventType =
@@ -11,6 +12,11 @@ export type MCEventType =
   | 'event:push'
   | 'metrics:update'
   | 'settings:update'
+  | 'skill:add'
+  | 'skill:update'
+  | 'skill:remove'
+  | 'chat:message'
+  | 'chat:clear'
   | 'state:reset'
   | 'state:sync';
 
@@ -29,6 +35,8 @@ export interface MCState {
   events: TaskEvent[];
   metrics: UsageMetrics;
   settings: SettingToggle[];
+  skills: Skill[];
+  chatMessages: ChatMessage[];
 }
 
 const STORAGE_KEY = 'mission-control-state';
@@ -39,7 +47,6 @@ class MissionControlBus {
   private state: MCState;
 
   constructor(initialState: MCState) {
-    // Try to restore from localStorage, fall back to initial
     const saved = this.loadState();
     this.state = saved || initialState;
   }
@@ -64,7 +71,9 @@ class MissionControlBus {
     return { ...this.state };
   }
 
-  // ── Agent Operations ──
+  // ══════════════════════════════════════════════════════════
+  // AGENTS
+  // ══════════════════════════════════════════════════════════
   updateAgent(agentId: string, updates: Partial<Agent>) {
     this.state.agents = this.state.agents.map((a) =>
       a.id === agentId ? { ...a, ...updates } : a
@@ -89,7 +98,9 @@ class MissionControlBus {
     this.updateAgent(agentId, { status });
   }
 
-  // ── Task Operations ──
+  // ══════════════════════════════════════════════════════════
+  // TASKS
+  // ══════════════════════════════════════════════════════════
   submitTask(task: Omit<Task, 'id' | 'createdAt'> & { id?: string }) {
     const fullTask: Task = {
       id: task.id || `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -128,25 +139,31 @@ class MissionControlBus {
     this.emit('task:complete', { taskId, result });
   }
 
-  // ── Event/Log Operations ──
+  // ══════════════════════════════════════════════════════════
+  // EVENTS / LOGS
+  // ══════════════════════════════════════════════════════════
   pushEvent(event: Omit<TaskEvent, 'id' | 'timestamp'> & { id?: string; timestamp?: string }) {
     const fullEvent: TaskEvent = {
       id: event.id || `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       timestamp: event.timestamp || new Date().toISOString(),
       ...event,
     };
-    this.state.events = [fullEvent, ...this.state.events.slice(0, 199)]; // keep last 200
+    this.state.events = [fullEvent, ...this.state.events.slice(0, 199)];
     this.emit('event:push', fullEvent);
     return fullEvent;
   }
 
-  // ── Metrics ──
+  // ══════════════════════════════════════════════════════════
+  // METRICS
+  // ══════════════════════════════════════════════════════════
   updateMetrics(updates: Partial<UsageMetrics>) {
     this.state.metrics = { ...this.state.metrics, ...updates };
     this.emit('metrics:update', updates);
   }
 
-  // ── Settings ──
+  // ══════════════════════════════════════════════════════════
+  // SETTINGS
+  // ══════════════════════════════════════════════════════════
   updateSetting(settingId: string, enabled: boolean) {
     this.state.settings = this.state.settings.map((s) =>
       s.id === settingId ? { ...s, enabled } : s
@@ -162,13 +179,74 @@ class MissionControlBus {
     this.emit('settings:update', setting);
   }
 
-  // ── Bulk Operations ──
+  // ══════════════════════════════════════════════════════════
+  // SKILLS
+  // ══════════════════════════════════════════════════════════
+  addSkill(skill: Skill) {
+    const existing = this.state.skills.find((s) => s.id === skill.id);
+    if (existing) {
+      return this.updateSkill(skill.id, skill);
+    }
+    this.state.skills.push(skill);
+    this.emit('skill:add', skill);
+  }
+
+  updateSkill(skillId: string, updates: Partial<Skill>) {
+    this.state.skills = this.state.skills.map((s) =>
+      s.id === skillId ? { ...s, ...updates } : s
+    );
+    this.emit('skill:update', { skillId, updates });
+  }
+
+  removeSkill(skillId: string) {
+    this.state.skills = this.state.skills.filter((s) => s.id !== skillId);
+    this.emit('skill:remove', { skillId });
+  }
+
+  toggleSkill(skillId: string) {
+    const skill = this.state.skills.find((s) => s.id === skillId);
+    if (skill) {
+      this.updateSkill(skillId, { status: skill.status === 'active' ? 'inactive' : 'active' });
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // CHAT
+  // ══════════════════════════════════════════════════════════
+  sendChatMessage(content: string, options?: { agentName?: string; taskId?: string }) {
+    const msg: ChatMessage = {
+      id: `agent-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      role: 'agent',
+      content,
+      timestamp: new Date().toISOString(),
+      agentName: options?.agentName || 'Main Agent',
+      taskId: options?.taskId,
+    };
+    this.state.chatMessages.push(msg);
+    this.emit('chat:message', msg);
+    return msg;
+  }
+
+  getChatMessages(): ChatMessage[] {
+    return [...this.state.chatMessages];
+  }
+
+  clearChat() {
+    this.state.chatMessages = [];
+    this.emit('chat:clear', null);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BULK
+  // ══════════════════════════════════════════════════════════
   syncState(newState: Partial<MCState>) {
     if (newState.agents) this.state.agents = newState.agents;
     if (newState.tasks) this.state.tasks = newState.tasks;
     if (newState.events) this.state.events = newState.events;
     if (newState.metrics) this.state.metrics = newState.metrics;
     if (newState.settings) this.state.settings = newState.settings;
+    if (newState.skills) this.state.skills = newState.skills;
+    if (newState.chatMessages) this.state.chatMessages = newState.chatMessages;
     this.emit('state:sync', newState);
   }
 
@@ -181,9 +259,7 @@ class MissionControlBus {
   private persistState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-    } catch {
-      // quota exceeded or unavailable
-    }
+    } catch { /* quota exceeded */ }
   }
 
   private loadState(): MCState | null {
