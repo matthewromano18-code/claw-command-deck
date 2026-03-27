@@ -3,21 +3,26 @@ import type { PlatformServices, PlatformType } from './types';
 import { BrowserStorage, BrowserNotifier, BrowserShell, BrowserFileSystem } from './browser';
 
 function detectPlatform(): PlatformType {
-  // Tauri injects __TAURI__ on the window object
   if (typeof window !== 'undefined' && '__TAURI__' in window) {
     return 'tauri';
   }
   return 'web';
 }
 
-function createPlatformServices(): PlatformServices {
-  const type = detectPlatform();
-
-  // In Tauri mode, these would be swapped for Tauri API implementations.
-  // For now, always return browser fallbacks.
-  // Post-export: import from './tauri' when type === 'tauri'.
+async function createTauriServices(): Promise<PlatformServices> {
+  const { TauriStorage, TauriNotifier, TauriShell, TauriFileSystem } = await import('./tauri');
   return {
-    type,
+    type: 'tauri' as PlatformType,
+    storage: new TauriStorage(),
+    notifier: new TauriNotifier(),
+    shell: new TauriShell(),
+    fs: new TauriFileSystem(),
+  };
+}
+
+function createBrowserServices(): PlatformServices {
+  return {
+    type: 'web' as PlatformType,
     storage: new BrowserStorage(),
     notifier: new BrowserNotifier(),
     shell: new BrowserShell(),
@@ -25,5 +30,31 @@ function createPlatformServices(): PlatformServices {
   };
 }
 
-export const platform = createPlatformServices();
+// Start with browser services; upgrade to Tauri if detected
+let _platform: PlatformServices = createBrowserServices();
+let _initialized = false;
+
+export async function initPlatform(): Promise<PlatformServices> {
+  if (_initialized) return _platform;
+  _initialized = true;
+  if (detectPlatform() === 'tauri') {
+    try {
+      _platform = await createTauriServices();
+      console.log('[Platform] Tauri backend detected — native APIs active');
+    } catch (e) {
+      console.warn('[Platform] Tauri detected but plugins failed to load, falling back to browser', e);
+    }
+  } else {
+    console.log('[Platform] Browser mode — using web fallbacks');
+  }
+  return _platform;
+}
+
+// Synchronous access (returns browser services until initPlatform resolves)
+export const platform = new Proxy({} as PlatformServices, {
+  get(_target, prop: keyof PlatformServices) {
+    return _platform[prop];
+  },
+});
+
 export type { PlatformServices, PlatformType, IStorage, INotifier, IShell, IFileSystem } from './types';
