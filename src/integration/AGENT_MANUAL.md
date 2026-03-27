@@ -1,6 +1,6 @@
 # Mission Control — Agent Integration Manual
 
-> **API Version:** 2.2  
+> **API Version:** 2.3  
 > **Access:** `window.MissionControl` (browser console or injected script)
 
 ---
