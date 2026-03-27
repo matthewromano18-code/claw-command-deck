@@ -6,12 +6,12 @@ interface SwarmNodeData {
   isRoot?: boolean;
 }
 
-const statusConfig: Record<SwarmAgentStatus, { dot: string; label: string }> = {
-  spawning: { dot: 'bg-warning animate-pulse', label: 'Spawning' },
-  running: { dot: 'bg-primary animate-pulse', label: 'Running' },
+const statusConfig: Record<SwarmAgentStatus, { dot: string; label: string; ring?: string }> = {
+  spawning: { dot: 'bg-warning animate-pulse', label: 'Spawning', ring: 'ring-warning/30' },
+  running: { dot: 'bg-primary animate-pulse', label: 'Running', ring: 'ring-primary/30' },
   idle: { dot: 'bg-muted-foreground', label: 'Idle' },
-  completed: { dot: 'bg-success', label: 'Done' },
-  error: { dot: 'bg-destructive', label: 'Error' },
+  completed: { dot: 'bg-success', label: 'Done', ring: 'ring-success/20' },
+  error: { dot: 'bg-destructive animate-pulse', label: 'Error', ring: 'ring-destructive/30' },
 };
 
 const SwarmNode = ({ data }: { data: SwarmNodeData }) => {
@@ -19,22 +19,35 @@ const SwarmNode = ({ data }: { data: SwarmNodeData }) => {
   const cfg = statusConfig[swarmAgent.status];
   const isLeader = swarmAgent.role === 'leader';
 
+  const borderClass =
+    swarmAgent.status === 'error'
+      ? 'border-destructive/40 bg-destructive/5'
+      : swarmAgent.status === 'completed'
+      ? 'border-success/40 bg-success/5'
+      : isLeader
+      ? 'border-primary/50 bg-primary/8 shadow-[0_0_14px_hsl(var(--glow-strong))]'
+      : 'border-border/40 bg-card/80 hover:border-border/70';
+
   return (
     <>
       <Handle type="target" position={Position.Top} className="!bg-border !w-2 !h-2" />
       <div
-        className={`px-3 py-2.5 rounded-md border transition-all duration-300 cursor-pointer ${
-          isLeader
-            ? 'min-w-[190px] bg-primary/12 border-primary/50 shadow-[0_0_14px_hsl(var(--glow-strong))]'
-            : 'min-w-[160px] bg-card/80 border-border/40 hover:border-border/70'
-        } ${
-          swarmAgent.status === 'error' ? 'bg-destructive/8 border-destructive/30' : ''
-        }`}
+        className={`px-3 py-2.5 rounded-md border cursor-pointer transition-all duration-500 ${
+          isLeader ? 'min-w-[190px]' : 'min-w-[160px]'
+        } ${borderClass}`}
       >
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
-          <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-          <span className={`text-[11px] font-semibold text-foreground truncate ${isLeader ? 'text-xs' : ''}`}>
+          <div
+            className={`w-2 h-2 rounded-full shrink-0 transition-colors duration-500 ${cfg.dot} ${
+              cfg.ring ? `ring-2 ${cfg.ring}` : ''
+            }`}
+          />
+          <span
+            className={`font-semibold text-foreground truncate ${
+              isLeader ? 'text-xs' : 'text-[11px]'
+            }`}
+          >
             {swarmAgent.name}
           </span>
           {isLeader && (
@@ -45,11 +58,21 @@ const SwarmNode = ({ data }: { data: SwarmNodeData }) => {
         </div>
 
         {/* Status */}
-        <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{cfg.label}</span>
+        <span
+          className={`text-[9px] uppercase tracking-wider transition-colors duration-300 ${
+            swarmAgent.status === 'error'
+              ? 'text-destructive'
+              : swarmAgent.status === 'completed'
+              ? 'text-success'
+              : 'text-muted-foreground'
+          }`}
+        >
+          {cfg.label}
+        </span>
 
         {/* Current task */}
         {swarmAgent.currentTask && (
-          <p className="text-[10px] text-muted-foreground mt-1 leading-tight line-clamp-2">
+          <p className="text-[10px] text-muted-foreground mt-1 leading-tight line-clamp-2 transition-all duration-300">
             {swarmAgent.currentTask}
           </p>
         )}

@@ -19,7 +19,7 @@ const statusColors: Record<string, string> = {
 const typeStyles: Record<string, string> = {
   main: 'min-w-[180px]',
   department: 'min-w-[160px]',
-  specialist: 'min-w-[150px]',
+  specialist: 'min-w-[140px]',
 };
 
 const AgentNode = ({ data }: { data: AgentNodeData }) => {
@@ -29,20 +29,28 @@ const AgentNode = ({ data }: { data: AgentNodeData }) => {
     <>
       <Handle type="target" position={Position.Top} className="!bg-border !w-2 !h-2" />
       <div
-        className={`px-4 py-3 rounded-lg border transition-all duration-300 cursor-pointer ${
+        className={`px-4 py-3 rounded-lg border cursor-pointer transition-all duration-500 ${
           typeStyles[agent.type]
         } ${
           isOnPath
-            ? 'bg-primary/8 border-primary/40 shadow-[0_0_12px_hsl(218,68%,33%,0.15)]'
-            : 'bg-card/90 border-border/50 hover:border-border'
+            ? 'bg-primary/8 border-primary/40 shadow-[0_0_16px_hsl(218,68%,33%,0.2)]'
+            : 'bg-card/90 border-border/50 hover:border-border hover:shadow-sm'
         }`}
       >
         <div className="flex items-center gap-2 mb-1">
-          <div className={`w-2 h-2 rounded-full shrink-0 ${statusColors[agent.status]}`} />
-          <span className="text-xs font-semibold text-foreground truncate">{agent.name}</span>
+          <div
+            className={`w-2 h-2 rounded-full shrink-0 transition-colors duration-500 ${
+              statusColors[agent.status]
+            }`}
+          />
+          <span className="text-xs font-semibold text-foreground truncate">
+            {agent.name}
+          </span>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] text-muted-foreground capitalize">{agent.status}</span>
+          <span className="text-[10px] text-muted-foreground capitalize transition-all duration-300">
+            {agent.status}
+          </span>
           {agent.queueCount > 0 && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
               {agent.queueCount} queued
