@@ -67,7 +67,10 @@ export class TauriShell implements IShell {
       'openclaw gateway install': 'gateway_install',
       'openclaw gateway start': 'gateway_start',
       'openclaw gateway stop': 'gateway_stop',
+      'openclaw gateway restart': 'gateway_restart',
       'openclaw status': 'openclaw_status',
+      'openclaw configure': 'openclaw_configure',
+      'openclaw --version': 'openclaw_status',
     };
     const fullCmd = [command, ...(args || [])].join(' ');
     const tauriCmd = cmdMap[fullCmd];

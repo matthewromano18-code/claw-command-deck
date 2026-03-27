@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Network, ListTodo, Settings, Sparkles, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Network, ListTodo, Settings, Sparkles, MessageCircle, Activity } from 'lucide-react';
 import ChatPanel from './ChatPanel';
-
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/setup', icon: Activity, label: 'Setup' },
   { to: '/agents', icon: Network, label: 'Agents' },
   { to: '/skills', icon: Sparkles, label: 'Skills' },
   { to: '/tasks', icon: ListTodo, label: 'Tasks' },

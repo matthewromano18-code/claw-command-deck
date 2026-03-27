@@ -77,8 +77,6 @@ pub async fn openclaw_status() -> Result<ShellResult, String> {
 
 #[tauri::command]
 pub async fn get_app_config(key: String) -> Result<Option<String>, String> {
-    // Reads from tauri-plugin-store are done on the JS side.
-    // This command is a placeholder for any native-only config.
     Ok(Some(format!("config:{}", key)))
 }
 
@@ -86,6 +84,45 @@ pub async fn get_app_config(key: String) -> Result<Option<String>, String> {
 pub async fn set_app_config(key: String, value: String) -> Result<(), String> {
     let _ = (key, value);
     Ok(())
+}
+
+// ─── OpenClaw Config File Operations ──────────────────────
+
+#[tauri::command]
+pub async fn read_openclaw_config() -> Result<String, String> {
+    let home = std::env::var("HOME").map_err(|_| "Cannot determine HOME directory".to_string())?;
+    let path = format!("{}/.openclaw/openclaw.json", home);
+    std::fs::read_to_string(&path).map_err(|e| format!("Cannot read config: {}", e))
+}
+
+#[tauri::command]
+pub async fn write_openclaw_config(content: String) -> Result<(), String> {
+    let home = std::env::var("HOME").map_err(|_| "Cannot determine HOME directory".to_string())?;
+    let dir = format!("{}/.openclaw", home);
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Cannot create config dir: {}", e))?;
+    let path = format!("{}/openclaw.json", dir);
+    std::fs::write(&path, content).map_err(|e| format!("Cannot write config: {}", e))
+}
+
+#[tauri::command]
+pub async fn gateway_restart() -> Result<ShellResult, String> {
+    // Stop then start
+    let _ = run_command("openclaw", &["gateway", "stop"]);
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    run_command("openclaw", &["gateway", "start"])
+}
+
+#[tauri::command]
+pub async fn openclaw_configure() -> Result<ShellResult, String> {
+    run_command("openclaw", &["configure"])
+}
+
+#[tauri::command]
+pub async fn check_cli_installed() -> Result<bool, String> {
+    match Command::new("which").arg("openclaw").output() {
+        Ok(output) => Ok(output.status.success()),
+        Err(_) => Ok(false),
+    }
 }
 
 // ─── Helpers ───────────────────────────────────────────────

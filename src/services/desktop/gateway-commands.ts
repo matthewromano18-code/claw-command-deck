@@ -39,6 +39,24 @@ export async function stopGateway(): Promise<ShellResult> {
   return platform.shell.execute('openclaw', ['gateway', 'stop']);
 }
 
+export async function restartGateway(): Promise<ShellResult> {
+  return platform.shell.execute('openclaw', ['gateway', 'restart']);
+}
+
 export async function getOpenClawStatus(): Promise<ShellResult> {
   return platform.shell.execute('openclaw', ['status']);
+}
+
+export async function runConfigure(): Promise<ShellResult> {
+  return platform.shell.execute('openclaw', ['configure']);
+}
+
+export async function checkCLIInstalled(): Promise<boolean> {
+  if (!platform.shell.isAvailable()) return false;
+  try {
+    const result = await platform.shell.execute('openclaw', ['--version']);
+    return result.code === 0;
+  } catch {
+    return false;
+  }
 }

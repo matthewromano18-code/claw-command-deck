@@ -9,6 +9,7 @@ import AgentsPage from "./pages/Agents";
 import TasksPage from "./pages/Tasks";
 import SettingsPage from "./pages/SettingsPage";
 import SkillsPage from "./pages/Skills";
+import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import AuthDialog from "./components/gateway/AuthDialog";
 import PairingDialog from "./components/gateway/PairingDialog";
@@ -26,6 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/setup" element={<SetupPage />} />
             <Route path="/agents" element={<AgentsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/skills" element={<SkillsPage />} />
