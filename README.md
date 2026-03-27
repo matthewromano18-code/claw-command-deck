@@ -58,6 +58,10 @@ src-tauri/              # Tauri native shell (Rust)
 
 See [TAURI_SETUP.md](./TAURI_SETUP.md) for prerequisites, local development, and macOS packaging instructions.
 
+## Agent Integration
+
+External agents can control the entire dashboard via `window.MissionControl`. See the full API reference and workflow examples in [`src/integration/AGENT_MANUAL.md`](./src/integration/AGENT_MANUAL.md).
+
 ## License
 
 Proprietary — Nexxen Solutions
