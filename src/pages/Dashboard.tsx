@@ -37,7 +37,7 @@ const Dashboard = () => {
         <CommandPrompt onSubmit={(prompt) => submitTask(prompt)} />
         <GatewayStatusCard />
       </div>
-      <UsageBar metrics={metrics} />
+      <CodexUsageTracker />
       <QuickSettings settings={settings} onToggle={toggleSetting} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
