@@ -115,6 +115,61 @@ console.log(
   'color: hsl(215, 15%, 52%); font-size: 10px;'
 );
 
+// ─── Wednesday Demo: Engineering triggers a swarm ─────────
+setTimeout(() => {
+  const s = bus.startSwarm('dev-dept', 'clawteam spawn');
+  setTimeout(() => {
+    const leader = bus.spawnSwarmAgent(s.id, {
+      name: 'Swarm Leader',
+      role: 'leader',
+      parentId: 'dev-dept',
+      status: 'running',
+      currentTask: 'Coordinating code audit',
+    });
+    if (!leader) return;
+    setTimeout(() => {
+      bus.spawnSwarmAgent(s.id, {
+        name: 'Code Analyzer',
+        role: 'worker',
+        parentId: leader.id,
+        status: 'running',
+        currentTask: 'Scanning codebase',
+      });
+    }, 800);
+    setTimeout(() => {
+      bus.spawnSwarmAgent(s.id, {
+        name: 'Test Runner',
+        role: 'worker',
+        parentId: leader.id,
+        status: 'running',
+        currentTask: 'Running test suite',
+      });
+    }, 1600);
+    setTimeout(() => {
+      bus.updateSwarmAgent(s.id, leader.id, { currentTask: 'Awaiting worker results' });
+    }, 2400);
+    setTimeout(() => {
+      const state = bus.getState();
+      const session = state.swarmSessions.find(ss => ss.id === s.id);
+      const codeAnalyzer = session?.agents.find(a => a.name === 'Code Analyzer');
+      if (codeAnalyzer) {
+        bus.updateSwarmAgent(s.id, codeAnalyzer.id, { status: 'done', currentTask: 'Found 3 issues' });
+      }
+    }, 4000);
+    setTimeout(() => {
+      const state = bus.getState();
+      const session = state.swarmSessions.find(ss => ss.id === s.id);
+      const testRunner = session?.agents.find(a => a.name === 'Test Runner');
+      if (testRunner) {
+        bus.updateSwarmAgent(s.id, testRunner.id, { status: 'error', currentTask: '2 tests failed', error: 'AssertionError in auth.test.ts' });
+      }
+    }, 5500);
+    setTimeout(() => {
+      bus.updateSwarmAgent(s.id, leader.id, { status: 'done', currentTask: 'Audit complete — 2 failures' });
+    }, 7000);
+  }, 600);
+}, 1200);
+
 
 export { bus, api };
 export default bus;
