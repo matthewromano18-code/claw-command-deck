@@ -232,16 +232,34 @@ function runAgencyDemo() {
     // PHASE 4 — Activate all agents, delegate work
     // ─────────────────────────────────────────────
     bus.sendChatMessage('⚡ All positions filled. Activating the full agency and distributing tasks.', { agentName: 'Main Agent' });
+    think('main-agent', 'Main Agent', 'All 7 specialists recruited. Distributing task assignments across departments.', 'action');
 
     // Light up departments
+    const deptTaskAssignments: Record<string, string> = {
+      'dev-dept': 'Received build tasks: landing page, API endpoints, auth flow, test suite',
+      'content-dept': 'Received content tasks: launch blog post, landing copy, social media campaign',
+      'research-dept': 'Received research tasks: competitor analysis, market trends, user review mining',
+      'ops-dept': 'Received ops tasks: CI/CD pipeline, monitoring dashboard, deployment automation',
+    };
     for (const dept of departments) {
       bus.updateAgent(dept.id, { status: 'running', queueCount: 2 });
+      think(dept.id, dept.name, deptTaskAssignments[dept.id] || 'Processing incoming tasks', 'action');
       await t(300);
     }
 
-    // Light up specialists
+    // Light up specialists with work-specific thoughts
+    const specWorkThoughts: Record<string, string> = {
+      'frontend-spec': 'Decomposing UI into 14 components — starting with hero section and nav',
+      'backend-spec': 'Mapping 8 REST endpoints — users, products, auth, webhooks, billing...',
+      'qa-spec': 'Building test matrix: 47 unit tests + 12 E2E flows identified',
+      'copywriter-spec': 'Outlining 2,000-word launch post — researching keyword targets',
+      'seo-spec': 'Auditing 12 pages for meta tags, alt text, and structured data gaps',
+      'analyst-spec': 'Pulling pricing data from 8 competitors via public APIs',
+      'scraper-spec': 'Rotating through 5 proxy endpoints — testing rate limit thresholds',
+    };
     for (const spec of specialists) {
       bus.updateAgent(spec.id, { status: 'running', queueCount: 1 });
+      think(spec.id, spec.name, specWorkThoughts[spec.id] || 'Starting work...', 'action');
       await t(200);
     }
 
@@ -253,6 +271,18 @@ function runAgencyDemo() {
     bus.updateCodexApiUsage({ fiveHourPct: 25, weeklyPct: 8, codexTasks: 18 });
 
     await t(2000);
+
+    // Add mid-work thinking for specialists
+    think('frontend-spec', 'Frontend Dev', 'Hero section scaffold complete. Moving to responsive grid layout...', 'result');
+    think('backend-spec', 'Backend Dev', 'Database schema validated — 12 tables, 4 junction tables. Generating migrations.', 'thinking');
+    think('qa-spec', 'QA Engineer', 'Test runner initialized. Writing fixtures for user auth flow first.', 'action');
+    await t(500);
+    think('copywriter-spec', 'Copywriter', 'Draft intro complete. Hook: "The future of X isn\'t coming — it\'s here."', 'result');
+    think('seo-spec', 'SEO Analyst', 'Found 47 missing alt tags and 3 pages with no meta description.', 'error');
+    think('analyst-spec', 'Data Analyst', 'Price comparison matrix: our pricing is 23% below market avg. Opportunity.', 'result');
+    think('scraper-spec', 'Web Scraper', 'Successfully connected to 4/5 targets. One site has Cloudflare — switching strategy.', 'thinking');
+
+    await t(1500);
 
     // ─────────────────────────────────────────────
     // PHASE 5 — Every specialist spawns a swarm
