@@ -375,7 +375,7 @@ function runAgencyDemo() {
     const featureScraper = resSession()?.agents.find((a) => a.name === 'Feature Scraper');
     if (featureScraper) {
       bus.updateSwarmAgent(researchSwarm.id, featureScraper.id, { status: 'error', currentTask: 'Rate limited on 2 sites', error: '429 Too Many Requests — competitor-a.com' });
-      log('research-dept', 'Research', 'Feature Scraper hit rate limit on competitor-a.com', 'error');
+      log('research-dept', 'Research', 'Feature Scraper hit rate limit on competitor-a.com', 'failed');
     }
 
     await t(600);
