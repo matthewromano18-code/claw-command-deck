@@ -180,11 +180,20 @@ function runAgencyDemo() {
     // ─────────────────────────────────────────────
     bus.sendChatMessage('Standing up departments...', { agentName: 'Main Agent' });
 
+    const deptThoughts: Record<string, string> = {
+      'dev-dept': 'Initializing engineering protocols — setting up CI/CD and code review pipelines',
+      'content-dept': 'Loading brand guidelines and content templates from knowledge base',
+      'research-dept': 'Connecting to data sources and configuring web scraping proxies',
+      'ops-dept': 'Booting infrastructure monitoring and deployment automation',
+    };
+
     for (let i = 0; i < departments.length; i++) {
       const dept = departments[i];
       await t(800);
       bus.addAgent({ ...dept, status: 'idle', queueCount: 0 });
       log('main-agent', 'Main Agent', `Created department: ${dept.name}`, 'delegated');
+      think('main-agent', 'Main Agent', `Deployed ${dept.name} — configuring access and tools`, 'action');
+      think(dept.id, dept.name, deptThoughts[dept.id] || 'Coming online...', 'plan');
       bus.sendChatMessage(`📂 **${dept.name}** department online.`, { agentName: 'Main Agent' });
     }
 
@@ -196,12 +205,24 @@ function runAgencyDemo() {
     // ─────────────────────────────────────────────
     bus.sendChatMessage('Departments are recruiting specialists...', { agentName: 'Main Agent' });
 
+    const specThoughts: Record<string, string> = {
+      'frontend-spec': 'Scanning project for existing UI components and design tokens...',
+      'backend-spec': 'Checking database schemas and API endpoint inventory...',
+      'qa-spec': 'Loading test framework configs — Playwright + Vitest detected',
+      'copywriter-spec': 'Analyzing brand voice guidelines and tone requirements',
+      'seo-spec': 'Crawling sitemap and indexing current keyword rankings',
+      'analyst-spec': 'Connecting to analytics APIs — pulling competitor pricing data',
+      'scraper-spec': 'Testing proxy rotation and rate limit detection systems',
+    };
+
     for (let i = 0; i < specialists.length; i++) {
       const spec = specialists[i];
       await t(600);
       bus.addAgent({ ...spec, status: 'idle', queueCount: 0 });
       const parentDept = departments.find((d) => d.id === spec.parentId);
       log(spec.parentId!, parentDept?.name || 'Department', `Recruited ${spec.name}`, 'processing');
+      think(spec.parentId!, parentDept?.name || 'Department', `Onboarding ${spec.name} — assigning toolset`, 'action');
+      think(spec.id, spec.name, specThoughts[spec.id] || 'Initializing...', 'thinking');
     }
 
     bus.updateCodexApiUsage({ fiveHourPct: 12, codexTasks: 11 });
