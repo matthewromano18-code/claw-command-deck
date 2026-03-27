@@ -57,7 +57,8 @@ class MissionControlBus {
 
   constructor(initialState: MCState) {
     const saved = this.loadState();
-    this.state = saved || initialState;
+    // Merge saved state with initial to handle newly added fields
+    this.state = saved ? { ...initialState, ...saved } : initialState;
   }
 
   // ── Subscribe ──
