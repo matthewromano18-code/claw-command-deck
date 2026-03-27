@@ -102,86 +102,87 @@ const AgentFlowChartInner = ({
     });
 
     // ── Swarm Branches ──
+    // Place swarm tree to the far right of all existing nodes
     const activeSessions = swarmSessions.filter((s) => s.status === 'active' || s.agents.length > 0);
 
-    activeSessions.forEach((session) => {
-      const triggerNode = ns.find((n) => n.id === session.triggerAgentId);
-      const baseX = triggerNode ? triggerNode.position.x : 0;
-      const baseY = triggerNode ? triggerNode.position.y : 340;
+    if (activeSessions.length > 0) {
+      // Find rightmost node X to position swarm branch clear of everything
+      const maxX = Math.max(...ns.map((n) => n.position.x), 0);
+      const swarmBaseX = maxX + 350;
 
-      // Build a map of swarm agent children
-      const rootAgents = session.agents.filter((a) => a.parentId === session.triggerAgentId);
-      const childMap = new Map<string, typeof session.agents>();
-      session.agents.forEach((a) => {
-        if (!childMap.has(a.parentId)) childMap.set(a.parentId, []);
-        childMap.get(a.parentId)!.push(a);
-      });
+      activeSessions.forEach((session) => {
+        const triggerNode = ns.find((n) => n.id === session.triggerAgentId);
+        if (!triggerNode) return;
 
-      // BFS layout for swarm agents
-      const swarmSpacing = 180;
-      let queue = rootAgents.map((a, i) => ({
-        agent: a,
-        depth: 1,
-        index: i,
-        total: rootAgents.length,
-      }));
+        const triggerY = triggerNode.position.y;
 
-      const visited = new Set<string>();
+        // Find the leader
+        const leader = session.agents.find(
+          (a) => a.parentId === session.triggerAgentId && a.role === 'leader'
+        ) || session.agents.find((a) => a.parentId === session.triggerAgentId);
 
-      while (queue.length > 0) {
-        const current = queue.shift()!;
-        if (visited.has(current.agent.id)) continue;
-        visited.add(current.agent.id);
+        if (!leader) return;
 
-        const offsetX = baseX + (current.index - (current.total - 1) / 2) * swarmSpacing;
-        const offsetY = baseY + current.depth * 120;
+        const workers = session.agents.filter((a) => a.parentId === leader.id);
 
-        const nodeId = `swarm-${session.id}-${current.agent.id}`;
-
+        // Leader — same Y as trigger, offset to the right
+        const leaderNodeId = `swarm-${session.id}-${leader.id}`;
         ns.push({
-          id: nodeId,
+          id: leaderNodeId,
           type: 'swarmNode',
-          position: { x: offsetX, y: offsetY },
-          data: {
-            swarmAgent: current.agent,
-            isRoot: current.depth === 1,
-          },
+          position: { x: swarmBaseX, y: triggerY },
+          data: { swarmAgent: leader, isRoot: true },
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
         });
 
-        // Edge from parent
-        const parentNodeId = current.agent.parentId === session.triggerAgentId
-          ? session.triggerAgentId
-          : `swarm-${session.id}-${current.agent.parentId}`;
-
+        // Edge: trigger → leader (horizontal branch)
         es.push({
-          id: `e-swarm-${session.id}-${current.agent.id}`,
-          source: parentNodeId,
-          target: nodeId,
-          animated: current.agent.status === 'running' || current.agent.status === 'spawning',
+          id: `e-swarm-trigger-${leader.id}`,
+          source: session.triggerAgentId,
+          target: leaderNodeId,
+          animated: leader.status === 'running' || leader.status === 'spawning',
           style: {
-            stroke: current.agent.status === 'error'
-              ? 'hsl(0, 55%, 50%)'
-              : current.agent.status === 'running'
-              ? 'hsl(218, 68%, 50%)'
-              : undefined,
-            strokeDasharray: '4 3',
+            stroke: 'hsl(218, 68%, 50%)',
+            strokeWidth: 2,
           },
         });
 
-        // Queue children
-        const children = childMap.get(current.agent.id) || [];
-        children.forEach((child, ci) => {
-          queue.push({
-            agent: child,
-            depth: current.depth + 1,
-            index: ci,
-            total: children.length,
+        // Workers fan out below the leader
+        const workerSpacing = 200;
+        const workerStartX = swarmBaseX - ((workers.length - 1) * workerSpacing) / 2;
+
+        workers.forEach((worker, i) => {
+          const workerNodeId = `swarm-${session.id}-${worker.id}`;
+          const wx = workerStartX + i * workerSpacing;
+          const wy = triggerY + 160;
+
+          ns.push({
+            id: workerNodeId,
+            type: 'swarmNode',
+            position: { x: wx, y: wy },
+            data: { swarmAgent: worker, isRoot: false },
+            sourcePosition: Position.Bottom,
+            targetPosition: Position.Top,
+          });
+
+          es.push({
+            id: `e-swarm-${session.id}-${worker.id}`,
+            source: leaderNodeId,
+            target: workerNodeId,
+            animated: worker.status === 'running' || worker.status === 'spawning',
+            style: {
+              stroke: worker.status === 'error'
+                ? 'hsl(0, 55%, 50%)'
+                : worker.status === 'running' || worker.status === 'spawning'
+                ? 'hsl(218, 68%, 50%)'
+                : 'hsl(var(--border))',
+              strokeDasharray: '5 4',
+            },
           });
         });
-      }
-    });
+      });
+    }
 
     return { nodes: ns, edges: es };
   }, [agents, activeTaskPath, swarmSessions]);
@@ -189,11 +190,12 @@ const AgentFlowChartInner = ({
   // Re-fit when swarm nodes appear/change
   const swarmNodeCount = swarmSessions.reduce((sum, s) => sum + s.agents.length, 0);
   useEffect(() => {
-    if (swarmNodeCount > 0) {
-      const timer = setTimeout(() => fitView({ padding: 0.3, duration: 400 }), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [swarmNodeCount, fitView]);
+    // Delay to let React Flow measure new nodes
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.25, duration: 500 });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [swarmNodeCount, nodes.length, fitView]);
 
   const handleNodeClick = useCallback((_: any, node: Node) => {
     if (node.type === 'swarmNode' && onSwarmNodeClick) {
@@ -214,16 +216,17 @@ const AgentFlowChartInner = ({
   return (
     <div className={`w-full glass-panel overflow-hidden transition-all duration-500`} style={{ height: chartHeight }}>
       <ReactFlow
+        key={`flow-${nodes.length}`}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         fitView
-        fitViewOptions={{ padding: 0.3 }}
+        fitViewOptions={{ padding: 0.25 }}
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}
         nodesConnectable={false}
-        minZoom={0.3}
+        minZoom={0.2}
         maxZoom={1.5}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="hsl(218, 25%, 15%)" />
