@@ -1,5 +1,6 @@
 import MissionControlBus from './MissionControlBus';
 import { mockAgents, mockTasks, mockEvents, mockMetrics, mockSettings } from '@/data/mockData';
+import { mockSkills } from '@/data/mockSkills';
 
 // ─── Singleton Bus Instance ────────────────────────────────
 const bus = new MissionControlBus({
@@ -8,74 +9,67 @@ const bus = new MissionControlBus({
   events: mockEvents,
   metrics: mockMetrics,
   settings: mockSettings,
+  skills: mockSkills,
+  chatMessages: [],
 });
 
 // ─── Expose on Window for External Agent Access ────────────
-// OpenClaw or any agent can call: window.MissionControl.submitTask(...)
-interface MissionControlAPI {
+const api = {
   // State
-  getState: typeof bus.getState;
+  getState: bus.getState.bind(bus),
 
   // Agents
-  addAgent: typeof bus.addAgent;
-  updateAgent: typeof bus.updateAgent;
-  removeAgent: typeof bus.removeAgent;
-  setAgentStatus: typeof bus.setAgentStatus;
-
-  // Tasks
-  submitTask: typeof bus.submitTask;
-  updateTask: typeof bus.updateTask;
-  completeTask: typeof bus.completeTask;
-
-  // Events
-  pushEvent: typeof bus.pushEvent;
-
-  // Metrics
-  updateMetrics: typeof bus.updateMetrics;
-
-  // Settings
-  updateSetting: typeof bus.updateSetting;
-  addSetting: typeof bus.addSetting;
-
-  // Bulk
-  syncState: typeof bus.syncState;
-  resetState: typeof bus.resetState;
-  clearStorage: typeof bus.clearStorage;
-
-  // Events
-  on: typeof bus.on;
-
-  // Version
-  version: string;
-}
-
-const api: MissionControlAPI = {
-  getState: bus.getState.bind(bus),
   addAgent: bus.addAgent.bind(bus),
   updateAgent: bus.updateAgent.bind(bus),
   removeAgent: bus.removeAgent.bind(bus),
   setAgentStatus: bus.setAgentStatus.bind(bus),
+
+  // Tasks
   submitTask: bus.submitTask.bind(bus),
   updateTask: bus.updateTask.bind(bus),
   completeTask: bus.completeTask.bind(bus),
+
+  // Events / Logs
   pushEvent: bus.pushEvent.bind(bus),
+
+  // Metrics
   updateMetrics: bus.updateMetrics.bind(bus),
+
+  // Settings
   updateSetting: bus.updateSetting.bind(bus),
   addSetting: bus.addSetting.bind(bus),
+
+  // Skills
+  addSkill: bus.addSkill.bind(bus),
+  updateSkill: bus.updateSkill.bind(bus),
+  removeSkill: bus.removeSkill.bind(bus),
+  toggleSkill: bus.toggleSkill.bind(bus),
+
+  // Chat
+  sendChatMessage: bus.sendChatMessage.bind(bus),
+  getChatMessages: bus.getChatMessages.bind(bus),
+  clearChat: bus.clearChat.bind(bus),
+
+  // Bulk
   syncState: bus.syncState.bind(bus),
   resetState: bus.resetState.bind(bus),
   clearStorage: bus.clearStorage.bind(bus),
+
+  // Subscribe
   on: bus.on.bind(bus),
-  version: '1.0.0',
+
+  // Meta
+  version: '2.0.0',
 };
 
 // Attach to window
 (window as any).MissionControl = api;
 
-// Log availability
 console.log(
-  '%c🚀 Mission Control API available at window.MissionControl',
-  'color: hsl(175, 70%, 50%); font-weight: bold; font-size: 12px;'
+  '%c🚀 Mission Control API v2.0 — window.MissionControl\n' +
+  '%cAgents • Tasks • Skills • Chat • Events • Metrics • Settings',
+  'color: hsl(175, 70%, 50%); font-weight: bold; font-size: 12px;',
+  'color: hsl(215, 15%, 52%); font-size: 10px;'
 );
 
 export { bus, api };
