@@ -117,12 +117,12 @@ console.log(
 
 // ─── Auto Demo: Swarm Branch from Engineering ─────────────
 setTimeout(() => {
-  const s = bus.startSwarm('dept-engineering', 'clawteam spawn');
+  const s = bus.startSwarm('dev-dept', 'clawteam spawn');
   setTimeout(() => {
     const leader = bus.spawnSwarmAgent(s.id, {
       name: 'Swarm Leader',
       role: 'leader',
-      parentId: 'dept-engineering',
+      parentId: 'dev-dept',
       status: 'running',
       currentTask: 'Coordinating analysis',
     });
