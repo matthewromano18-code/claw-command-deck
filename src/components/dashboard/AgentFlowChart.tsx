@@ -163,7 +163,7 @@ const AgentFlowChartInner = ({
 
     if (activeSessions.length > 0) {
       const maxX = Math.max(...ns.map((n) => n.position.x), 0);
-      let swarmOffsetX = maxX + 380;
+      let swarmOffsetX = maxX + NODE_WIDTH + 200;
 
       activeSessions.forEach((session) => {
         const triggerNode = ns.find((n) => n.id === session.triggerAgentId);
