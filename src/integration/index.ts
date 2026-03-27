@@ -45,7 +45,6 @@ bus.clearStorage();
 
 // ─── Wednesday Demo: Engineering kicks off a swarm ─────────
 setTimeout(() => {
-  // Engineering agent goes active
   bus.setAgentStatus('dept-engineering', 'running');
   bus.pushEvent({
     taskId: 'demo-swarm',
@@ -57,112 +56,114 @@ setTimeout(() => {
 
   const swarm = bus.startSwarm('dept-engineering', 'clawteam spawn --parallel refactor');
 
-  // Wave 1 — first two workers spawn immediately
+  // Wave 1 — Leader spawns
   setTimeout(() => {
-    const w1 = bus.spawnSwarmAgent(swarm.id, {
-      name: 'Code Analyzer',
+    const leader = bus.spawnSwarmAgent(swarm.id, {
+      name: 'Swarm Leader',
+      role: 'leader',
       parentId: 'dept-engineering',
       status: 'running',
-      currentTask: 'Scanning codebase for dead imports',
-    });
-
-    const w2 = bus.spawnSwarmAgent(swarm.id, {
-      name: 'Test Runner',
-      parentId: 'dept-engineering',
-      status: 'running',
-      currentTask: 'Running full test suite',
+      currentTask: 'Coordinating refactor across codebase',
     });
 
     bus.pushEvent({
       taskId: 'demo-swarm',
-      agentId: 'dept-engineering',
-      agentName: 'Engineering',
-      type: 'delegated',
-      message: 'Spawned Code Analyzer + Test Runner',
+      agentId: leader!.id,
+      agentName: 'Swarm Leader',
+      type: 'received',
+      message: 'Swarm leader online — planning worker allocation',
     });
 
-    // Wave 2 — sub-agents spawn under workers
+    // Wave 2 — Leader spawns 3 workers
     setTimeout(() => {
-      if (!w1 || !w2) return;
+      if (!leader) return;
 
-      bus.spawnSwarmAgent(swarm.id, {
-        name: 'Lint Fixer',
-        parentId: w1.id,
+      const w1 = bus.spawnSwarmAgent(swarm.id, {
+        name: 'Code Analyzer',
+        role: 'worker',
+        parentId: leader.id,
         status: 'running',
-        currentTask: 'Auto-fixing 23 lint violations',
+        currentTask: 'Scanning for dead imports & unused code',
       });
 
-      bus.spawnSwarmAgent(swarm.id, {
-        name: 'Import Cleaner',
-        parentId: w1.id,
+      const w2 = bus.spawnSwarmAgent(swarm.id, {
+        name: 'Test Runner',
+        role: 'worker',
+        parentId: leader.id,
+        status: 'running',
+        currentTask: 'Running full test suite (147 tests)',
+      });
+
+      const w3 = bus.spawnSwarmAgent(swarm.id, {
+        name: 'Dependency Auditor',
+        role: 'worker',
+        parentId: leader.id,
         status: 'spawning',
-        currentTask: 'Removing 8 unused imports',
+        currentTask: 'Checking outdated packages',
       });
 
-      bus.updateSwarmAgent(swarm.id, w2.id, {
-        status: 'running',
-        currentTask: 'Running 147 unit tests…',
+      bus.updateSwarmAgent(swarm.id, leader.id, {
+        currentTask: 'Monitoring 3 workers…',
       });
 
       bus.pushEvent({
         taskId: 'demo-swarm',
-        agentId: w1.id,
-        agentName: 'Code Analyzer',
+        agentId: leader.id,
+        agentName: 'Swarm Leader',
         type: 'delegated',
-        message: 'Spawned Lint Fixer + Import Cleaner',
+        message: 'Spawned 3 workers: Analyzer, Tests, Auditor',
       });
 
-      // Wave 3 — results come in
+      // Wave 3 — Workers start completing
       setTimeout(() => {
-        bus.updateSwarmAgent(swarm.id, w1.id, {
-          status: 'completed',
-          currentTask: 'Analysis complete — 31 issues found',
+        if (!w1 || !w2 || !w3) return;
+
+        bus.updateSwarmAgent(swarm.id, w3.id, {
+          status: 'running',
+          currentTask: 'Found 4 outdated packages',
         });
 
-        bus.updateSwarmAgent(swarm.id, w2.id, {
+        bus.updateSwarmAgent(swarm.id, w1.id, {
           status: 'completed',
-          currentTask: '147/147 tests passed ✓',
+          currentTask: 'Removed 12 dead imports ✓',
         });
 
         bus.pushEvent({
           taskId: 'demo-swarm',
-          agentId: w2.id,
-          agentName: 'Test Runner',
+          agentId: w1.id,
+          agentName: 'Code Analyzer',
           type: 'completed',
-          message: 'All 147 tests passed',
+          message: 'Removed 12 dead imports across 8 files',
         });
 
-        // Wave 4 — sub-agents finish, one errors
+        // Wave 4 — More results
         setTimeout(() => {
-          const agents = bus.getState().swarmSessions
-            .find(s => s.id === swarm.id)?.agents || [];
-          const lintFixer = agents.find(a => a.name === 'Lint Fixer');
-          const importCleaner = agents.find(a => a.name === 'Import Cleaner');
+          bus.updateSwarmAgent(swarm.id, w2.id, {
+            status: 'completed',
+            currentTask: '147/147 tests passed ✓',
+          });
 
-          if (lintFixer) {
-            bus.updateSwarmAgent(swarm.id, lintFixer.id, {
-              status: 'completed',
-              currentTask: 'Fixed 23/23 violations',
-            });
-          }
-          if (importCleaner) {
-            bus.updateSwarmAgent(swarm.id, importCleaner.id, {
-              status: 'error',
-              currentTask: 'Failed on circular dependency',
-              error: 'Circular import detected: utils → helpers → utils',
-            });
-          }
+          bus.updateSwarmAgent(swarm.id, w3.id, {
+            status: 'error',
+            currentTask: 'Version conflict detected',
+            error: 'react-dom@18 conflicts with react@19 peer dep',
+          });
+
+          bus.updateSwarmAgent(swarm.id, leader.id, {
+            status: 'completed',
+            currentTask: 'Swarm done — 2 success, 1 conflict',
+          });
 
           bus.pushEvent({
             taskId: 'demo-swarm',
-            agentId: 'dept-engineering',
-            agentName: 'Engineering',
+            agentId: leader.id,
+            agentName: 'Swarm Leader',
             type: 'completed',
-            message: 'Swarm finished — 3 completed, 1 error',
+            message: 'Swarm finished — 2 workers passed, 1 conflict found',
           });
-        }, 4000);
-      }, 3500);
-    }, 2500);
+        }, 3500);
+      }, 3000);
+    }, 2000);
   }, 1000);
 }, 800);
 
