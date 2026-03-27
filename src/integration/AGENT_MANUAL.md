@@ -1,6 +1,6 @@
 # Mission Control — Agent Integration Manual
 
-> **API Version:** 2.1  
+> **API Version:** 2.2  
 > **Access:** `window.MissionControl` (browser console or injected script)
 
 ---
@@ -382,7 +382,144 @@ mc.pushEvent({
 
 ---
 
-## 13. State Persistence
+## 13. Swarm Branches
+
+Swarm branches let an agent spawn a dynamic execution tree of sub-agents that appear live in the flow chart. Use this for parallel workloads, team-style execution, or any multi-agent task.
+
+### Start a Swarm
+
+```js
+// triggerAgentId = the existing hierarchy agent that kicks off the swarm
+// command = the instruction or trigger phrase
+const session = mc.startSwarm('dept-research', 'START SWARM');
+// Returns: { id, triggerAgentId, command, startedAt, status: 'active', agents: [] }
+```
+
+### Spawn Agents into the Swarm
+
+```js
+// Each agent needs a parentId — either the triggerAgentId or another swarm agent
+mc.spawnSwarmAgent(session.id, {
+  name: 'Researcher-1',
+  parentId: 'dept-research',    // first-level child of trigger agent
+  status: 'running',            // 'spawning' | 'running' | 'idle' | 'completed' | 'error'
+  currentTask: 'Scanning knowledge base',
+});
+
+mc.spawnSwarmAgent(session.id, {
+  name: 'Researcher-2',
+  parentId: 'dept-research',
+  status: 'spawning',
+  currentTask: 'Fetching API docs',
+});
+
+// Nested agents (child of another swarm agent)
+const analyst = mc.spawnSwarmAgent(session.id, {
+  name: 'Analyst-1',
+  parentId: 'researcher-1-id',  // use the returned agent's id
+  status: 'idle',
+  currentTask: 'Waiting for data',
+});
+```
+
+### Update a Swarm Agent
+
+```js
+// Change status, current task, or mark errors
+mc.updateSwarmAgent(session.id, 'agent-id', {
+  status: 'completed',
+  currentTask: 'Analysis finished',
+});
+
+// Mark an agent as errored
+mc.updateSwarmAgent(session.id, 'agent-id', {
+  status: 'error',
+  error: 'API rate limit exceeded',
+});
+```
+
+### Complete the Swarm
+
+```js
+mc.completeSwarm(session.id);                    // status → 'completed'
+mc.completeSwarm(session.id, 'failed');           // status → 'failed'
+```
+
+### Query Active Swarm
+
+```js
+const active = mc.getActiveSwarm();
+// Returns the first session with status === 'active', or null
+```
+
+### Full Swarm Workflow Example
+
+```js
+const mc = window.MissionControl;
+
+// 1. Start swarm from the Research department
+const swarm = mc.startSwarm('dept-research', 'clawteam spawn --parallel');
+
+// 2. Spawn workers
+const w1 = mc.spawnSwarmAgent(swarm.id, {
+  name: 'Web Crawler',
+  parentId: 'dept-research',
+  status: 'running',
+  currentTask: 'Crawling target sites',
+});
+
+const w2 = mc.spawnSwarmAgent(swarm.id, {
+  name: 'API Fetcher',
+  parentId: 'dept-research',
+  status: 'running',
+  currentTask: 'Pulling API data',
+});
+
+// 3. Spawn a sub-agent under worker 1
+mc.spawnSwarmAgent(swarm.id, {
+  name: 'Parser',
+  parentId: w1.id,
+  status: 'spawning',
+  currentTask: 'Waiting for crawl results',
+});
+
+// 4. Update progress
+mc.updateSwarmAgent(swarm.id, w1.id, {
+  status: 'completed',
+  currentTask: 'Crawl finished — 42 pages',
+});
+
+mc.updateSwarmAgent(swarm.id, w2.id, {
+  status: 'error',
+  error: 'Timeout after 30s',
+});
+
+// 5. Finish
+mc.completeSwarm(swarm.id);
+```
+
+### Swarm Events
+
+Subscribe to swarm lifecycle events:
+
+```js
+mc.on('swarm:start', (e) => console.log('Swarm started:', e.payload));
+mc.on('swarm:agent-spawn', (e) => console.log('Agent spawned:', e.payload));
+mc.on('swarm:agent-update', (e) => console.log('Agent updated:', e.payload));
+mc.on('swarm:complete', (e) => console.log('Swarm done:', e.payload));
+```
+
+### UI Behavior
+
+- Swarm nodes appear as a **dashed-edge sub-tree** below the triggering agent in the flow chart.
+- Running/spawning agents have **animated edges**; errored agents have **red edges**.
+- The flow chart auto-expands vertically when a swarm is active.
+- A **Swarm Event Log** panel appears below the chart showing recent agent activity.
+- Clicking any swarm node opens a **detail popover** with status, task, spawn time, and errors.
+
+---
+
+## 14. State Persistence
 
 All state changes are automatically persisted to `localStorage` under the key `mission-control-state`. State survives page reloads. Call `mc.clearStorage()` to reset.
 
@@ -394,3 +531,4 @@ All state changes are automatically persisted to `localStorage` under the key `m
 - IDs are auto-generated if not provided (format: `type-timestamp-random`).
 - The event feed keeps the most recent 200 entries.
 - Partial updates are shallow-merged — provide full nested objects when updating complex fields like `cpu`.
+- Swarm sessions persist in state — clear storage or call `completeSwarm()` to clean up.
