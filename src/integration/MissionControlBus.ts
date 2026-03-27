@@ -1,4 +1,4 @@
-import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus, Skill, SystemVitalsData, CodexApiUsageData } from '@/data/types';
+import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus, Skill, SystemVitalsData, CodexApiUsageData, SwarmSession, SwarmAgent, SwarmAgentStatus } from '@/data/types';
 import { ChatMessage } from '@/data/chatTypes';
 
 // ─── Event Types ───────────────────────────────────────────
