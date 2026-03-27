@@ -153,7 +153,7 @@ setTimeout(() => {
       const session = state.swarmSessions.find(ss => ss.id === s.id);
       const codeAnalyzer = session?.agents.find(a => a.name === 'Code Analyzer');
       if (codeAnalyzer) {
-        bus.updateSwarmAgent(s.id, codeAnalyzer.id, { status: 'done', currentTask: 'Found 3 issues' });
+        bus.updateSwarmAgent(s.id, codeAnalyzer.id, { status: 'completed', currentTask: 'Found 3 issues' });
       }
     }, 4000);
     setTimeout(() => {
