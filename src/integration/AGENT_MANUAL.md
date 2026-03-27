@@ -1,6 +1,6 @@
 # Mission Control — Agent Integration Manual
 
-> **API Version:** 2.2  
+> **API Version:** 2.3  
 > **Access:** `window.MissionControl` (browser console or injected script)
 
 ---
@@ -293,11 +293,13 @@ unsub();
 ### All Event Types
 ```
 agent:update, agent:add, agent:remove,
+agent:thought,
 task:submit, task:update, task:complete,
 event:push, metrics:update, settings:update,
 skill:add, skill:update, skill:remove,
 chat:message, chat:clear,
 vitals:update, codex-api:update,
+swarm:start, swarm:agent-spawn, swarm:agent-update, swarm:complete,
 state:reset, state:sync
 ```
 
@@ -348,7 +350,11 @@ const task = mc.submitTask({
   currentAgentId: 'my-agent',
 });
 
-// 3. Log progress
+// 3. Think out loud (visible on Agents tab)
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Analyzing auth module — 3 files, 480 lines total', 'plan');
+
+// 4. Log progress
 mc.setAgentStatus('my-agent', 'running');
 mc.pushEvent({
   taskId: task.id,
@@ -358,17 +364,25 @@ mc.pushEvent({
   message: 'Analyzing auth module structure...',
 });
 
-// 4. Update vitals as you work
+// 5. Share reasoning as you work
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Found circular dependency in auth/token.ts → refactoring', 'thinking');
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Extracting token refresh logic into separate module', 'action');
+
+// 6. Update vitals as you work
 mc.updateSystemVitals({ cpu: { percentage: 78 } });
 mc.updateCodexApiUsage({ fiveHourPct: 15, codexTasks: 1 });
 
-// 5. Send chat updates
+// 7. Send chat updates
 mc.sendChatMessage('Auth module has 3 files to refactor.', {
   agentName: 'My Custom Agent',
   taskId: task.id,
 });
 
-// 6. Complete
+// 8. Complete
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Refactoring complete — complexity reduced 40%, all tests pass', 'result');
 mc.completeTask(task.id, 'Refactored 3 files, reduced complexity by 40%', 0.95);
 mc.setAgentStatus('my-agent', 'idle');
 mc.pushEvent({
@@ -519,7 +533,91 @@ mc.on('swarm:complete', (e) => console.log('Swarm done:', e.payload));
 
 ---
 
-## 14. State Persistence
+## 14. Agent Thoughts (Inner Monologue)
+
+Agent thoughts provide a per-agent "inner monologue" stream visible on the **Agents** tab. Each agent has an expandable thought log showing its reasoning, actions, results, and errors in real time.
+
+### Push a Thought
+
+```js
+mc.pushAgentThought(agentId, agentName, content, type);
+// type: 'thinking' | 'action' | 'result' | 'error' | 'plan'
+```
+
+### Examples
+
+```js
+// Planning phase
+mc.pushAgentThought('frontend-spec', 'Frontend Dev',
+  'Breaking UI into 14 components — hero, nav, cards, modals...', 'plan');
+
+// Active work
+mc.pushAgentThought('frontend-spec', 'Frontend Dev',
+  'Scaffolding hero section with responsive grid layout', 'action');
+
+// Reporting a result
+mc.pushAgentThought('frontend-spec', 'Frontend Dev',
+  'Hero section complete — 3 breakpoints, dark mode support', 'result');
+
+// Reporting an error
+mc.pushAgentThought('seo-spec', 'SEO Analyst',
+  'Found 47 missing alt tags on production pages', 'error');
+
+// General reasoning
+mc.pushAgentThought('main-agent', 'Main Agent',
+  'Workload exceeds single-agent capacity. Should spawn swarm.', 'thinking');
+```
+
+### Thought Types
+
+| Type       | Icon      | Use When                                         |
+|------------|-----------|--------------------------------------------------|
+| `thinking` | 🧠 Brain  | Internal reasoning, analysis, decision-making    |
+| `action`   | ⚡ Zap    | Executing a step, calling a tool, writing code   |
+| `result`   | ✅ Check  | Reporting a successful outcome or finding        |
+| `error`    | ⚠️ Alert  | Something failed or needs attention              |
+| `plan`     | 📋 List   | Outlining steps, breaking down a problem         |
+
+### Subscribing to Thoughts
+
+```js
+mc.on('agent:thought', (event) => {
+  const thought = event.payload;
+  // { id, agentId, agentName, content, type, timestamp }
+  console.log(`[${thought.agentName}] ${thought.type}: ${thought.content}`);
+});
+```
+
+### UI Behavior
+
+- Each agent card on the **Agents** tab has a collapsible **"Thoughts"** section.
+- Thoughts stream in real time with animated entries.
+- The latest thought previews in the collapsed state.
+- A badge shows the total thought count per agent.
+- Thoughts are cleared when a `state:sync` event resets the demo.
+
+### Recommended Usage Pattern
+
+```js
+// When starting work
+mc.pushAgentThought(agentId, name, 'Analyzing task requirements...', 'thinking');
+
+// When making a plan
+mc.pushAgentThought(agentId, name, 'Need 3 steps: parse → transform → validate', 'plan');
+
+// When executing
+mc.pushAgentThought(agentId, name, 'Running data transformation pipeline', 'action');
+
+// When done
+mc.pushAgentThought(agentId, name, 'Pipeline complete — 1,247 records processed', 'result');
+
+// When something breaks
+mc.pushAgentThought(agentId, name, 'API returned 429 — backing off 30s', 'error');
+```
+
+---
+
+## 15. State Persistence
 
 All state changes are automatically persisted to `localStorage` under the key `mission-control-state`. State survives page reloads. Call `mc.clearStorage()` to reset.
 

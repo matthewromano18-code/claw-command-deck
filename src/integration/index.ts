@@ -105,15 +105,15 @@ const api = {
   on: bus.on.bind(bus),
 
   // Meta
-  version: '2.2.0',
+  version: '2.3.0',
 };
 
 // Attach to window
 (window as any).MissionControl = api;
 
 console.log(
-  '%c🚀 Mission Control API v2.2 — window.MissionControl\n' +
-  '%cAgents • Tasks • Skills • Chat • Vitals • Codex • Swarm • Events • Metrics • Settings',
+  '%c🚀 Mission Control API v2.3 — window.MissionControl\n' +
+  '%cAgents • Tasks • Skills • Chat • Thoughts • Vitals • Codex • Swarm • Events • Metrics • Settings',
   'color: hsl(175, 70%, 50%); font-weight: bold; font-size: 12px;',
   'color: hsl(215, 15%, 52%); font-size: 10px;'
 );
