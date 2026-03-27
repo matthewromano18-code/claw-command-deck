@@ -8,17 +8,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import type { SettingItem } from '@/data/settingsConfig';
 
 interface Props {
   setting: SettingItem;
   value: unknown;
   onChange: (id: string, value: unknown) => void;
+  onAction?: (id: string) => void;
   showConfigKey?: boolean;
 }
 
-export function SettingControl({ setting, value, onChange, showConfigKey }: Props) {
+export function SettingControl({ setting, value, onChange, onAction, showConfigKey }: Props) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValue, setPendingValue] = useState<unknown>(null);
 
   const riskColor = setting.risk === 'danger' ? 'text-destructive' : setting.risk === 'caution' ? 'text-warning' : 'text-success';
@@ -27,16 +29,23 @@ export function SettingControl({ setting, value, onChange, showConfigKey }: Prop
   const handleChange = (newVal: unknown) => {
     if (setting.requiresConfirm) {
       setPendingValue(newVal);
+      setConfirmOpen(true);
     } else {
       onChange(setting.id, newVal);
     }
   };
 
   const confirmChange = () => {
-    if (pendingValue !== null) {
+    if (pendingValue !== null && pendingValue !== undefined) {
       onChange(setting.id, pendingValue);
-      setPendingValue(null);
     }
+    setPendingValue(null);
+    setConfirmOpen(false);
+  };
+
+  const cancelChange = () => {
+    setPendingValue(null);
+    setConfirmOpen(false);
   };
 
   const renderControl = () => {
@@ -52,13 +61,16 @@ export function SettingControl({ setting, value, onChange, showConfigKey }: Prop
       case 'slider':
         return (
           <div className="w-full max-w-[200px] space-y-1">
-            <Slider
-              value={[value as number]}
-              onValueChange={([v]) => onChange(setting.id, v)}
-              min={setting.min ?? 0}
-              max={setting.max ?? 100}
-              step={setting.step ?? 1}
-            />
+            <div className="flex items-center gap-2">
+              <Slider
+                value={[value as number]}
+                onValueChange={([v]) => onChange(setting.id, v)}
+                min={setting.min ?? 0}
+                max={setting.max ?? 100}
+                step={setting.step ?? 1}
+              />
+              <span className="text-[10px] text-muted-foreground font-mono w-8 text-right">{value as number}</span>
+            </div>
             {setting.sliderLabels && (
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>{setting.sliderLabels[0]}</span>
@@ -89,16 +101,33 @@ export function SettingControl({ setting, value, onChange, showConfigKey }: Prop
           <Input
             type="number"
             value={value as number}
-            onChange={(e) => onChange(setting.id, Number(e.target.value))}
+            onChange={(e) => {
+              const num = Number(e.target.value);
+              if (setting.min !== undefined && num < setting.min) return;
+              if (setting.max !== undefined && num > setting.max) return;
+              onChange(setting.id, num);
+            }}
             min={setting.min}
             max={setting.max}
-            className="w-20 h-8 text-xs"
+            className="w-24 h-8 text-xs"
           />
         );
 
       case 'button':
         return (
-          <Button variant="destructive" size="sm" className="text-xs h-7" onClick={() => handleChange(true)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="text-xs h-7"
+            onClick={() => {
+              if (setting.requiresConfirm) {
+                setPendingValue('action');
+                setConfirmOpen(true);
+              } else {
+                onAction?.(setting.id);
+              }
+            }}
+          >
             {setting.label}
           </Button>
         );
@@ -116,7 +145,7 @@ export function SettingControl({ setting, value, onChange, showConfigKey }: Prop
       default:
         return (
           <Input
-            value={value as string ?? ''}
+            value={(value as string) ?? ''}
             onChange={(e) => onChange(setting.id, e.target.value)}
             className="w-[200px] h-8 text-xs"
           />
@@ -137,7 +166,9 @@ export function SettingControl({ setting, value, onChange, showConfigKey }: Prop
             )}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help shrink-0" />
+                <button type="button" className="inline-flex">
+                  <Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help shrink-0" />
+                </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[260px] text-xs">
                 {setting.tooltip}
@@ -160,22 +191,25 @@ export function SettingControl({ setting, value, onChange, showConfigKey }: Prop
       </div>
 
       {/* Confirmation dialog for dangerous actions */}
-      {setting.requiresConfirm && pendingValue !== null && (
-        <AlertDialog open onOpenChange={(open) => { if (!open) setPendingValue(null); }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-sm">Confirm Change</AlertDialogTitle>
-              <AlertDialogDescription className="text-xs">
-                {setting.warning || `Are you sure you want to change "${setting.label}"? This may affect system behavior.`}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="text-xs h-8" onClick={() => setPendingValue(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction className="text-xs h-8" onClick={confirmChange}>Confirm</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog open={confirmOpen} onOpenChange={(open) => { if (!open) cancelChange(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-warning" />
+              Confirm Change
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              {setting.warning || `Are you sure you want to change "${setting.label}"? This may affect system behavior.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs h-8" onClick={cancelChange}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="text-xs h-8" onClick={confirmChange}>
+              {setting.type === 'button' ? 'Yes, do it' : 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

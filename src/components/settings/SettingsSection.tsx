@@ -1,7 +1,8 @@
 // ─── Settings Section Card ──────────────────────────────────
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Brain, Shield, Globe, Workflow, Link2, BarChart3, Database, Wrench, Cpu, ScrollText, Radio } from 'lucide-react';
+import { ChevronDown, Brain, Shield, Globe, Workflow, Link2, BarChart3, Database, Wrench, Cpu, ScrollText, Radio, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { SettingControl } from './SettingControl';
 import type { SectionMeta, SettingItem } from '@/data/settingsConfig';
 
@@ -14,6 +15,7 @@ interface Props {
   settings: SettingItem[];
   values: Record<string, unknown>;
   onChange: (id: string, value: unknown) => void;
+  onAction?: (id: string) => void;
   showConfigKeys: boolean;
   defaultOpen?: boolean;
 }
@@ -65,20 +67,37 @@ function ConnectionStatus({ settings, values }: { settings: SettingItem[]; value
 }
 
 // ── System status for the system section ─────────────────────
-function SystemStatus() {
+function SystemStatus({ onReconnect }: { onReconnect: () => void }) {
+  const [reconnecting, setReconnecting] = useState(false);
+
+  const handleReconnect = () => {
+    setReconnecting(true);
+    onReconnect();
+    setTimeout(() => setReconnecting(false), 2000);
+  };
+
   return (
-    <div className="flex items-center gap-3 mb-3 p-2.5 rounded-md bg-success/8 border border-success/20">
+    <div className="flex items-center gap-3 mb-3 p-2.5 rounded-md bg-success/10 border border-success/20">
       <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
       <div>
         <p className="text-xs font-medium text-foreground">System Connected</p>
         <p className="text-[10px] text-muted-foreground">Gateway online · Last ping 2s ago</p>
       </div>
-      <button className="ml-auto text-[10px] text-primary hover:underline">Reconnect</button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="ml-auto text-[10px] h-6 px-2 gap-1"
+        onClick={handleReconnect}
+        disabled={reconnecting}
+      >
+        <RefreshCw className={`w-3 h-3 ${reconnecting ? 'animate-spin' : ''}`} />
+        {reconnecting ? 'Reconnecting...' : 'Reconnect'}
+      </Button>
     </div>
   );
 }
 
-export function SettingsSection({ section, settings, values, onChange, showConfigKeys, defaultOpen = false }: Props) {
+export function SettingsSection({ section, settings, values, onChange, onAction, showConfigKeys, defaultOpen = false }: Props) {
   const [open, setOpen] = useState(defaultOpen);
   const Icon = ICON_MAP[section.icon] ?? Brain;
 
@@ -117,26 +136,16 @@ export function SettingsSection({ section, settings, values, onChange, showConfi
               {/* Special section content */}
               {section.id === 'usage' && <UsageStats />}
               {section.id === 'connections' && <ConnectionStatus settings={settings} values={values} />}
-              {section.id === 'system' && <SystemStatus />}
+              {section.id === 'system' && <SystemStatus onReconnect={() => onAction?.('reconnect')} />}
 
-              {/* Settings controls (skip connection toggles since we show status above) */}
-              {settings
-                .filter((s) => section.id !== 'connections')
-                .map((s) => (
-                  <SettingControl
-                    key={s.id}
-                    setting={s}
-                    value={values[s.id]}
-                    onChange={onChange}
-                    showConfigKey={showConfigKeys}
-                  />
-                ))}
-              {section.id === 'connections' && settings.map((s) => (
+              {/* Settings controls */}
+              {settings.map((s) => (
                 <SettingControl
                   key={s.id}
                   setting={s}
                   value={values[s.id]}
                   onChange={onChange}
+                  onAction={onAction}
                   showConfigKey={showConfigKeys}
                 />
               ))}

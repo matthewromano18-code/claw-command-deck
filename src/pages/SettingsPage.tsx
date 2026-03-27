@@ -21,6 +21,7 @@ const SettingsPage = () => {
     setSearchQuery,
     resetToDefaults,
     applyRecommended,
+    handleAction,
   } = useSettingsStore();
 
   const filteredSections = useMemo(() => {
@@ -132,6 +133,7 @@ const SettingsPage = () => {
             settings={items}
             values={values}
             onChange={setValue}
+            onAction={handleAction}
             showConfigKeys={advancedMode}
             defaultOpen={idx === 0}
           />
