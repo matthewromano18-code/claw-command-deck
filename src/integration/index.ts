@@ -105,7 +105,7 @@ const api = {
   on: bus.on.bind(bus),
 
   // Meta
-  version: '2.2.0',
+  version: '2.3.0',
 };
 
 // Attach to window
