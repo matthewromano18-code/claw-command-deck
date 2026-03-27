@@ -350,7 +350,11 @@ const task = mc.submitTask({
   currentAgentId: 'my-agent',
 });
 
-// 3. Log progress
+// 3. Think out loud (visible on Agents tab)
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Analyzing auth module — 3 files, 480 lines total', 'plan');
+
+// 4. Log progress
 mc.setAgentStatus('my-agent', 'running');
 mc.pushEvent({
   taskId: task.id,
@@ -360,17 +364,25 @@ mc.pushEvent({
   message: 'Analyzing auth module structure...',
 });
 
-// 4. Update vitals as you work
+// 5. Share reasoning as you work
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Found circular dependency in auth/token.ts → refactoring', 'thinking');
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Extracting token refresh logic into separate module', 'action');
+
+// 6. Update vitals as you work
 mc.updateSystemVitals({ cpu: { percentage: 78 } });
 mc.updateCodexApiUsage({ fiveHourPct: 15, codexTasks: 1 });
 
-// 5. Send chat updates
+// 7. Send chat updates
 mc.sendChatMessage('Auth module has 3 files to refactor.', {
   agentName: 'My Custom Agent',
   taskId: task.id,
 });
 
-// 6. Complete
+// 8. Complete
+mc.pushAgentThought('my-agent', 'My Custom Agent',
+  'Refactoring complete — complexity reduced 40%, all tests pass', 'result');
 mc.completeTask(task.id, 'Refactored 3 files, reduced complexity by 40%', 0.95);
 mc.setAgentStatus('my-agent', 'idle');
 mc.pushEvent({
