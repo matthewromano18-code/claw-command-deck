@@ -93,6 +93,9 @@ const api = {
   completeSwarm: bus.completeSwarm.bind(bus),
   getActiveSwarm: bus.getActiveSwarm.bind(bus),
 
+  // Agent Thoughts
+  pushAgentThought: bus.pushAgentThought.bind(bus),
+
   // Bulk
   syncState: bus.syncState.bind(bus),
   resetState: bus.resetState.bind(bus),
@@ -124,6 +127,8 @@ function runAgencyDemo() {
   const t = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const log = (agentId: string, agentName: string, msg: string, type: 'received' | 'delegated' | 'processing' | 'completed' | 'failed' = 'processing') =>
     bus.pushEvent({ taskId: 'demo', agentId, agentName, type, message: msg });
+  const think = (agentId: string, agentName: string, content: string, type: 'thinking' | 'action' | 'result' | 'error' | 'plan' = 'thinking') =>
+    bus.pushAgentThought(agentId, agentName, content, type);
 
   // Agent templates
   const mainAgent = mockAgents.find((a) => a.id === 'main-agent')!;
@@ -150,10 +155,14 @@ function runAgencyDemo() {
     bus.sendChatMessage('🧠 Initializing Main Agent...', { agentName: 'System' });
     bus.addAgent({ ...mainAgent, status: 'thinking', queueCount: 0 });
     log('main-agent', 'Main Agent', 'Booting up — analyzing incoming project', 'received');
+    think('main-agent', 'Main Agent', 'Analyzing directive: "Build full product for Q3 launch"', 'plan');
 
-    await t(1500);
+    await t(800);
+    think('main-agent', 'Main Agent', 'Breaking down into departments: Engineering, Content, Research, Operations');
+    await t(700);
 
     bus.updateAgent('main-agent', { status: 'running' });
+    think('main-agent', 'Main Agent', 'Agency structure planned. Need 4 departments, 7 specialists. Deploying now.', 'action');
     bus.sendChatMessage('🚀 I\'m online. Received directive: "Build full product for Q3 launch." Let me spin up the agency.', { agentName: 'Main Agent' });
 
     bus.submitTask({
@@ -171,11 +180,20 @@ function runAgencyDemo() {
     // ─────────────────────────────────────────────
     bus.sendChatMessage('Standing up departments...', { agentName: 'Main Agent' });
 
+    const deptThoughts: Record<string, string> = {
+      'dev-dept': 'Initializing engineering protocols — setting up CI/CD and code review pipelines',
+      'content-dept': 'Loading brand guidelines and content templates from knowledge base',
+      'research-dept': 'Connecting to data sources and configuring web scraping proxies',
+      'ops-dept': 'Booting infrastructure monitoring and deployment automation',
+    };
+
     for (let i = 0; i < departments.length; i++) {
       const dept = departments[i];
       await t(800);
       bus.addAgent({ ...dept, status: 'idle', queueCount: 0 });
       log('main-agent', 'Main Agent', `Created department: ${dept.name}`, 'delegated');
+      think('main-agent', 'Main Agent', `Deployed ${dept.name} — configuring access and tools`, 'action');
+      think(dept.id, dept.name, deptThoughts[dept.id] || 'Coming online...', 'plan');
       bus.sendChatMessage(`📂 **${dept.name}** department online.`, { agentName: 'Main Agent' });
     }
 
@@ -187,12 +205,24 @@ function runAgencyDemo() {
     // ─────────────────────────────────────────────
     bus.sendChatMessage('Departments are recruiting specialists...', { agentName: 'Main Agent' });
 
+    const specThoughts: Record<string, string> = {
+      'frontend-spec': 'Scanning project for existing UI components and design tokens...',
+      'backend-spec': 'Checking database schemas and API endpoint inventory...',
+      'qa-spec': 'Loading test framework configs — Playwright + Vitest detected',
+      'copywriter-spec': 'Analyzing brand voice guidelines and tone requirements',
+      'seo-spec': 'Crawling sitemap and indexing current keyword rankings',
+      'analyst-spec': 'Connecting to analytics APIs — pulling competitor pricing data',
+      'scraper-spec': 'Testing proxy rotation and rate limit detection systems',
+    };
+
     for (let i = 0; i < specialists.length; i++) {
       const spec = specialists[i];
       await t(600);
       bus.addAgent({ ...spec, status: 'idle', queueCount: 0 });
       const parentDept = departments.find((d) => d.id === spec.parentId);
       log(spec.parentId!, parentDept?.name || 'Department', `Recruited ${spec.name}`, 'processing');
+      think(spec.parentId!, parentDept?.name || 'Department', `Onboarding ${spec.name} — assigning toolset`, 'action');
+      think(spec.id, spec.name, specThoughts[spec.id] || 'Initializing...', 'thinking');
     }
 
     bus.updateCodexApiUsage({ fiveHourPct: 12, codexTasks: 11 });
@@ -202,16 +232,34 @@ function runAgencyDemo() {
     // PHASE 4 — Activate all agents, delegate work
     // ─────────────────────────────────────────────
     bus.sendChatMessage('⚡ All positions filled. Activating the full agency and distributing tasks.', { agentName: 'Main Agent' });
+    think('main-agent', 'Main Agent', 'All 7 specialists recruited. Distributing task assignments across departments.', 'action');
 
     // Light up departments
+    const deptTaskAssignments: Record<string, string> = {
+      'dev-dept': 'Received build tasks: landing page, API endpoints, auth flow, test suite',
+      'content-dept': 'Received content tasks: launch blog post, landing copy, social media campaign',
+      'research-dept': 'Received research tasks: competitor analysis, market trends, user review mining',
+      'ops-dept': 'Received ops tasks: CI/CD pipeline, monitoring dashboard, deployment automation',
+    };
     for (const dept of departments) {
       bus.updateAgent(dept.id, { status: 'running', queueCount: 2 });
+      think(dept.id, dept.name, deptTaskAssignments[dept.id] || 'Processing incoming tasks', 'action');
       await t(300);
     }
 
-    // Light up specialists
+    // Light up specialists with work-specific thoughts
+    const specWorkThoughts: Record<string, string> = {
+      'frontend-spec': 'Decomposing UI into 14 components — starting with hero section and nav',
+      'backend-spec': 'Mapping 8 REST endpoints — users, products, auth, webhooks, billing...',
+      'qa-spec': 'Building test matrix: 47 unit tests + 12 E2E flows identified',
+      'copywriter-spec': 'Outlining 2,000-word launch post — researching keyword targets',
+      'seo-spec': 'Auditing 12 pages for meta tags, alt text, and structured data gaps',
+      'analyst-spec': 'Pulling pricing data from 8 competitors via public APIs',
+      'scraper-spec': 'Rotating through 5 proxy endpoints — testing rate limit thresholds',
+    };
     for (const spec of specialists) {
       bus.updateAgent(spec.id, { status: 'running', queueCount: 1 });
+      think(spec.id, spec.name, specWorkThoughts[spec.id] || 'Starting work...', 'action');
       await t(200);
     }
 
@@ -223,6 +271,18 @@ function runAgencyDemo() {
     bus.updateCodexApiUsage({ fiveHourPct: 25, weeklyPct: 8, codexTasks: 18 });
 
     await t(2000);
+
+    // Add mid-work thinking for specialists
+    think('frontend-spec', 'Frontend Dev', 'Hero section scaffold complete. Moving to responsive grid layout...', 'result');
+    think('backend-spec', 'Backend Dev', 'Database schema validated — 12 tables, 4 junction tables. Generating migrations.', 'thinking');
+    think('qa-spec', 'QA Engineer', 'Test runner initialized. Writing fixtures for user auth flow first.', 'action');
+    await t(500);
+    think('copywriter-spec', 'Copywriter', 'Draft intro complete. Hook: "The future of X isn\'t coming — it\'s here."', 'result');
+    think('seo-spec', 'SEO Analyst', 'Found 47 missing alt tags and 3 pages with no meta description.', 'error');
+    think('analyst-spec', 'Data Analyst', 'Price comparison matrix: our pricing is 23% below market avg. Opportunity.', 'result');
+    think('scraper-spec', 'Web Scraper', 'Successfully connected to 4/5 targets. One site has Cloudflare — switching strategy.', 'thinking');
+
+    await t(1500);
 
     // ─────────────────────────────────────────────
     // PHASE 5 — Every specialist spawns a swarm
@@ -302,6 +362,7 @@ function runAgencyDemo() {
       await t(700);
 
       const parentDept = departments.find((d) => d.id === spec.parentId);
+      think(spec.id, spec.name, `Workload too large for solo execution. Spawning swarm: ${cfg.command}`, 'plan');
       bus.sendChatMessage(`⚡ **${spec.name}** spawning swarm: \`${cfg.command}\``, { agentName: parentDept?.name || 'Department' });
       log(spec.id, spec.name, `Workload critical — spawning swarm`, 'processing');
 

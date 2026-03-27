@@ -1,5 +1,6 @@
 import { Agent, Task, TaskEvent, UsageMetrics, SettingToggle, AgentStatus, Skill, SystemVitalsData, CodexApiUsageData, SwarmSession, SwarmAgent, SwarmAgentStatus } from '@/data/types';
 import { ChatMessage } from '@/data/chatTypes';
+import { AgentThought } from '@/data/agentThoughtTypes';
 
 // ─── Event Types ───────────────────────────────────────────
 export type MCEventType =
@@ -23,6 +24,7 @@ export type MCEventType =
   | 'swarm:agent-spawn'
   | 'swarm:agent-update'
   | 'swarm:complete'
+  | 'agent:thought'
   | 'state:reset'
   | 'state:sync';
 
@@ -245,6 +247,23 @@ class MissionControlBus {
     this.state.chatMessages = [];
     this.emit('chat:clear', null);
   }
+
+  // ══════════════════════════════════════════════════════════
+  // AGENT THOUGHTS
+  // ══════════════════════════════════════════════════════════
+  pushAgentThought(agentId: string, agentName: string, content: string, type: AgentThought['type'] = 'thinking') {
+    const thought: AgentThought = {
+      id: `thought-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      agentId,
+      agentName,
+      content,
+      type,
+      timestamp: new Date().toISOString(),
+    };
+    this.emit('agent:thought', thought);
+    return thought;
+  }
+
 
   // ══════════════════════════════════════════════════════════
   // BULK
