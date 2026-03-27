@@ -120,7 +120,7 @@ console.log(
 // ═══════════════════════════════════════════════════════════
 function runAgencyDemo() {
   const t = (ms: number) => new Promise((r) => setTimeout(r, ms));
-  const log = (agentId: string, agentName: string, msg: string, type: 'received' | 'delegated' | 'processing' | 'completed' | 'error' = 'processing') =>
+  const log = (agentId: string, agentName: string, msg: string, type: 'received' | 'delegated' | 'processing' | 'completed' | 'failed' = 'processing') =>
     bus.pushEvent({ agentId, agentName, type, message: msg });
 
   const findSwarmAgent = (sessionId: string, name: string) =>
