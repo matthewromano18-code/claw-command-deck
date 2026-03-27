@@ -1,9 +1,10 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Network, ListTodo, Settings, Radio } from 'lucide-react';
+import { LayoutDashboard, Network, ListTodo, Settings, Radio, Sparkles } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/agents', icon: Network, label: 'Agents' },
+  { to: '/skills', icon: Sparkles, label: 'Skills' },
   { to: '/tasks', icon: ListTodo, label: 'Tasks' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];

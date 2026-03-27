@@ -62,3 +62,16 @@ export interface SettingToggle {
   enabled: boolean;
   category: 'connection' | 'automation' | 'safety' | 'integration';
 }
+
+export interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  status: 'active' | 'inactive';
+  agentIds: string[];
+  triggers: string[];
+  cooldown: number;
+  usageCount: number;
+  lastUsed: string;
+}

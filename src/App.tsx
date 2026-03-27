@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import AgentsPage from "./pages/Agents";
 import TasksPage from "./pages/Tasks";
 import SettingsPage from "./pages/SettingsPage";
+import SkillsPage from "./pages/Skills";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/agents" element={<AgentsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/skills" element={<SkillsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
