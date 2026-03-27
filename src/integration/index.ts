@@ -116,24 +116,45 @@ console.log(
 );
 
 // ═══════════════════════════════════════════════════════════
-// FULL AGENCY DEMO — "Wednesday morning, all hands on deck"
+// FULL AGENCY DEMO — "Build from scratch"
+// Starts blank, Main Agent builds the entire agency, then
+// every specialist spawns a swarm.
 // ═══════════════════════════════════════════════════════════
 function runAgencyDemo() {
   const t = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const log = (agentId: string, agentName: string, msg: string, type: 'received' | 'delegated' | 'processing' | 'completed' | 'failed' = 'processing') =>
     bus.pushEvent({ taskId: 'demo', agentId, agentName, type, message: msg });
 
-  const findSwarmAgent = (sessionId: string, name: string) =>
-    bus.getState().swarmSessions.find((s) => s.id === sessionId)?.agents.find((a) => a.name === name);
+  // Agent templates
+  const mainAgent = mockAgents.find((a) => a.id === 'main-agent')!;
+  const departments = mockAgents.filter((a) => a.type === 'department');
+  const specialists = mockAgents.filter((a) => a.type === 'specialist');
 
   (async () => {
-    // ─────────────────────────────────────────────
-    // PHASE 1 — Main Agent receives a big project
-    // ─────────────────────────────────────────────
-    await t(800);
+    // ── CLEAR: Start with a blank slate ──
+    bus.syncState({
+      agents: [],
+      tasks: [],
+      events: [],
+      swarmSessions: [],
+      chatMessages: [],
+      metrics: { activeTasks: 0, queuedTasks: 0, completedToday: 0, estimatedTokens: 0, estimatedCost: 0, successRate: 0, avgCompletionTime: 0, uptime: 99.97 },
+      codexApiUsage: { fiveHourPct: 0, weeklyPct: 0, codexTasks: 0, plan: 'ChatGPT Plus' },
+    });
 
-    bus.sendChatMessage('🚀 New project incoming: Full product launch for Q3. Spinning up all departments.', { agentName: 'Main Agent' });
-    log('main-agent', 'Main Agent', 'Received project: Q3 Product Launch — delegating to all departments', 'received');
+    await t(1200);
+
+    // ─────────────────────────────────────────────
+    // PHASE 1 — Main Agent spawns
+    // ─────────────────────────────────────────────
+    bus.sendChatMessage('🧠 Initializing Main Agent...', { agentName: 'System' });
+    bus.addAgent({ ...mainAgent, status: 'thinking', queueCount: 0 });
+    log('main-agent', 'Main Agent', 'Booting up — analyzing incoming project', 'received');
+
+    await t(1500);
+
+    bus.updateAgent('main-agent', { status: 'running' });
+    bus.sendChatMessage('🚀 I\'m online. Received directive: "Build full product for Q3 launch." Let me spin up the agency.', { agentName: 'Main Agent' });
 
     const masterTask = bus.submitTask({
       prompt: 'Q3 Product Launch — Full agency deployment',
@@ -143,307 +164,258 @@ function runAgencyDemo() {
       currentAgentId: 'main-agent',
     });
 
-    bus.updateAgent('main-agent', { status: 'running', queueCount: 4 });
-
     await t(1200);
 
     // ─────────────────────────────────────────────
-    // PHASE 2 — Delegate to ALL departments
+    // PHASE 2 — Main Agent creates departments one by one
     // ─────────────────────────────────────────────
-    bus.sendChatMessage('Routing tasks: Engineering → build product, Content → launch copy, Research → competitor intel, Operations → deploy pipeline.', { agentName: 'Main Agent' });
+    bus.sendChatMessage('Standing up departments...', { agentName: 'Main Agent' });
 
-    // Engineering
-    bus.updateAgent('dev-dept', { status: 'running', queueCount: 3 });
-    log('dev-dept', 'Engineering', 'Received: Build and ship the product', 'received');
-    const engTask = bus.submitTask({ prompt: 'Build product frontend + backend + tests', status: 'active', priority: 'critical', agentPath: ['main-agent', 'dev-dept'], currentAgentId: 'dev-dept', department: 'Engineering' });
+    for (let i = 0; i < departments.length; i++) {
+      const dept = departments[i];
+      await t(800);
+      bus.addAgent({ ...dept, status: 'idle', queueCount: 0 });
+      log('main-agent', 'Main Agent', `Created department: ${dept.name}`, 'delegated');
+      bus.sendChatMessage(`📂 **${dept.name}** department online.`, { agentName: 'Main Agent' });
+    }
 
-    await t(400);
-
-    // Content
-    bus.updateAgent('content-dept', { status: 'running', queueCount: 2 });
-    log('content-dept', 'Content', 'Received: Create all launch materials', 'received');
-    bus.submitTask({ prompt: 'Write launch blog, landing page copy, social posts', status: 'active', priority: 'high', agentPath: ['main-agent', 'content-dept'], currentAgentId: 'content-dept', department: 'Content' });
-
-    await t(400);
-
-    // Research
-    bus.updateAgent('research-dept', { status: 'running', queueCount: 2 });
-    log('research-dept', 'Research', 'Received: Competitive analysis for launch positioning', 'received');
-    bus.submitTask({ prompt: 'Analyze competitor products and pricing', status: 'active', priority: 'high', agentPath: ['main-agent', 'research-dept'], currentAgentId: 'research-dept', department: 'Research' });
-
-    await t(400);
-
-    // Operations
-    bus.updateAgent('ops-dept', { status: 'running', queueCount: 1 });
-    log('ops-dept', 'Operations', 'Received: Set up CI/CD and monitoring', 'received');
-    bus.submitTask({ prompt: 'Configure deployment pipeline and alerts', status: 'active', priority: 'medium', agentPath: ['main-agent', 'ops-dept'], currentAgentId: 'ops-dept', department: 'Operations' });
-
-    bus.updateMetrics({ activeTasks: 5 });
-    bus.updateCodexApiUsage({ fiveHourPct: 12, codexTasks: 5 });
-
+    bus.updateCodexApiUsage({ fiveHourPct: 5, codexTasks: 4 });
     await t(1000);
 
     // ─────────────────────────────────────────────
-    // PHASE 3 — Departments delegate to specialists
+    // PHASE 3 — Departments recruit specialists
     // ─────────────────────────────────────────────
-    bus.sendChatMessage('All departments online. Specialists spinning up...', { agentName: 'Main Agent' });
+    bus.sendChatMessage('Departments are recruiting specialists...', { agentName: 'Main Agent' });
 
-    // Engineering → specialists
-    bus.updateAgent('frontend-spec', { status: 'running', queueCount: 2 });
-    log('frontend-spec', 'Frontend Dev', 'Building React components for product dashboard', 'processing');
-    bus.updateAgent('backend-spec', { status: 'running', queueCount: 1 });
-    log('backend-spec', 'Backend Dev', 'Setting up API routes and database schema', 'processing');
-    bus.updateAgent('qa-spec', { status: 'thinking', queueCount: 1 });
-    log('qa-spec', 'QA Agent', 'Preparing test suites, waiting for code', 'processing');
+    for (let i = 0; i < specialists.length; i++) {
+      const spec = specialists[i];
+      await t(600);
+      bus.addAgent({ ...spec, status: 'idle', queueCount: 0 });
+      const parentDept = departments.find((d) => d.id === spec.parentId);
+      log(spec.parentId!, parentDept?.name || 'Department', `Recruited ${spec.name}`, 'processing');
+    }
 
-    await t(600);
+    bus.updateCodexApiUsage({ fiveHourPct: 12, codexTasks: 11 });
+    await t(1000);
 
-    // Content → specialists
-    bus.updateAgent('copywriter-spec', { status: 'running', queueCount: 2 });
-    log('copywriter-spec', 'Copywriter', 'Drafting launch blog post and hero copy', 'processing');
-    bus.updateAgent('seo-spec', { status: 'running', queueCount: 1 });
-    log('seo-spec', 'SEO Specialist', 'Keyword research for launch landing page', 'processing');
+    // ─────────────────────────────────────────────
+    // PHASE 4 — Activate all agents, delegate work
+    // ─────────────────────────────────────────────
+    bus.sendChatMessage('⚡ All positions filled. Activating the full agency and distributing tasks.', { agentName: 'Main Agent' });
 
-    await t(600);
+    // Light up departments
+    for (const dept of departments) {
+      bus.updateAgent(dept.id, { status: 'running', queueCount: 2 });
+      await t(300);
+    }
 
-    // Research → specialists
-    bus.updateAgent('analyst-spec', { status: 'running', queueCount: 1 });
-    log('analyst-spec', 'Data Analyst', 'Pulling competitor pricing data from 12 sources', 'processing');
-    bus.updateAgent('scraper-spec', { status: 'running', queueCount: 1 });
-    log('scraper-spec', 'Web Scraper', 'Scraping product pages from 5 competitors', 'processing');
+    // Light up specialists
+    for (const spec of specialists) {
+      bus.updateAgent(spec.id, { status: 'running', queueCount: 1 });
+      await t(200);
+    }
 
-    bus.updateSystemVitals({ cpu: { percentage: 68, subtitle: 'Apple M4', details: [
-      { label: 'user', value: '45.2%' }, { label: 'sys', value: '22.8%' },
-      { label: 'idle', value: '32.0%' }, { label: 'cores', value: '10' },
+    bus.updateMetrics({ activeTasks: specialists.length });
+    bus.updateSystemVitals({ cpu: { percentage: 58, subtitle: 'Apple M4', details: [
+      { label: 'user', value: '38.2%' }, { label: 'sys', value: '19.8%' },
+      { label: 'idle', value: '42.0%' }, { label: 'cores', value: '10' },
     ]}});
-    bus.updateCodexApiUsage({ fiveHourPct: 28, weeklyPct: 8, codexTasks: 12 });
-
-    await t(1500);
-
-    // ─────────────────────────────────────────────
-    // PHASE 4 — Engineering spawns a SWARM
-    // ─────────────────────────────────────────────
-    bus.sendChatMessage('⚡ Engineering is spawning a build swarm — too much code to handle alone.', { agentName: 'Engineering' });
-    log('dev-dept', 'Engineering', 'Workload critical — initiating swarm: clawteam spawn', 'processing');
-
-    const engSwarm = bus.startSwarm('dev-dept', 'clawteam spawn --build');
-
-    await t(600);
-
-    const buildLeader = bus.spawnSwarmAgent(engSwarm.id, {
-      name: 'Build Coordinator',
-      role: 'leader',
-      parentId: 'dev-dept',
-      status: 'running',
-      currentTask: 'Orchestrating parallel build',
-    });
-    if (!buildLeader) return;
-
-    await t(700);
-
-    bus.spawnSwarmAgent(engSwarm.id, {
-      name: 'Component Builder',
-      role: 'worker',
-      parentId: buildLeader.id,
-      status: 'running',
-      currentTask: 'Building 14 React components',
-    });
-
-    await t(500);
-
-    bus.spawnSwarmAgent(engSwarm.id, {
-      name: 'API Scaffolder',
-      role: 'worker',
-      parentId: buildLeader.id,
-      status: 'running',
-      currentTask: 'Generating 8 REST endpoints',
-    });
-
-    await t(500);
-
-    bus.spawnSwarmAgent(engSwarm.id, {
-      name: 'DB Migrator',
-      role: 'worker',
-      parentId: buildLeader.id,
-      status: 'running',
-      currentTask: 'Running schema migrations',
-    });
-
-    bus.updateSystemVitals({ cpu: { percentage: 82, subtitle: 'Apple M4', details: [
-      { label: 'user', value: '58.1%' }, { label: 'sys', value: '24.3%' },
-      { label: 'idle', value: '17.6%' }, { label: 'cores', value: '10' },
-    ]}});
+    bus.updateCodexApiUsage({ fiveHourPct: 25, weeklyPct: 8, codexTasks: 18 });
 
     await t(2000);
 
     // ─────────────────────────────────────────────
-    // PHASE 5 — Research spawns a SWARM
+    // PHASE 5 — Every specialist spawns a swarm
     // ─────────────────────────────────────────────
-    bus.sendChatMessage('🔍 Research needs more firepower — spawning data collection swarm.', { agentName: 'Research' });
-    log('research-dept', 'Research', 'Spawning parallel scraping swarm', 'processing');
+    bus.sendChatMessage('🐝 Workload is massive — every specialist is spawning a swarm!', { agentName: 'Main Agent' });
 
-    const researchSwarm = bus.startSwarm('research-dept', 'clawteam spawn --scrape');
+    const swarmConfigs: Record<string, { command: string; leaderName: string; workers: { name: string; task: string }[] }> = {
+      'frontend-spec': {
+        command: 'clawteam spawn --ui-build',
+        leaderName: 'UI Build Lead',
+        workers: [
+          { name: 'Component Builder', task: 'Building 14 React components' },
+          { name: 'Style Architect', task: 'Implementing design system tokens' },
+          { name: 'Animation Dev', task: 'Adding Framer Motion transitions' },
+        ],
+      },
+      'backend-spec': {
+        command: 'clawteam spawn --api-build',
+        leaderName: 'API Build Lead',
+        workers: [
+          { name: 'REST Scaffolder', task: 'Generating 8 REST endpoints' },
+          { name: 'DB Migrator', task: 'Running schema migrations' },
+          { name: 'Auth Builder', task: 'Implementing JWT auth flow' },
+        ],
+      },
+      'qa-spec': {
+        command: 'clawteam spawn --test-suite',
+        leaderName: 'Test Coordinator',
+        workers: [
+          { name: 'Unit Tester', task: 'Writing 47 unit tests' },
+          { name: 'E2E Runner', task: 'Running Playwright test suite' },
+        ],
+      },
+      'copywriter-spec': {
+        command: 'clawteam spawn --content-gen',
+        leaderName: 'Content Lead',
+        workers: [
+          { name: 'Blog Writer', task: 'Drafting 2,000-word launch post' },
+          { name: 'Landing Copy', task: 'Writing hero + CTA sections' },
+          { name: 'Social Posts', task: 'Creating 30 social media posts' },
+        ],
+      },
+      'seo-spec': {
+        command: 'clawteam spawn --seo-audit',
+        leaderName: 'SEO Lead',
+        workers: [
+          { name: 'Keyword Miner', task: 'Analyzing 500 keyword opportunities' },
+          { name: 'Meta Generator', task: 'Generating meta tags for 12 pages' },
+        ],
+      },
+      'analyst-spec': {
+        command: 'clawteam spawn --data-crunch',
+        leaderName: 'Analytics Lead',
+        workers: [
+          { name: 'Price Analyzer', task: 'Comparing pricing across 8 competitors' },
+          { name: 'Trend Mapper', task: 'Mapping market trends Q1-Q3' },
+          { name: 'Report Builder', task: 'Generating executive summary PDF' },
+        ],
+      },
+      'scraper-spec': {
+        command: 'clawteam spawn --scrape-all',
+        leaderName: 'Scrape Coordinator',
+        workers: [
+          { name: 'Product Scraper', task: 'Extracting data from 5 competitor sites' },
+          { name: 'Review Scraper', task: 'Collecting 1,200 user reviews' },
+        ],
+      },
+    };
 
-    await t(600);
+    // Spawn swarms one specialist at a time
+    const swarmIds: { specId: string; sessionId: string; leaderId: string; workerIds: string[] }[] = [];
 
-    const scrapeLeader = bus.spawnSwarmAgent(researchSwarm.id, {
-      name: 'Scrape Coordinator',
-      role: 'leader',
-      parentId: 'research-dept',
-      status: 'running',
-      currentTask: 'Distributing scrape targets',
-    });
-    if (!scrapeLeader) return;
+    for (const spec of specialists) {
+      const cfg = swarmConfigs[spec.id];
+      if (!cfg) continue;
 
-    await t(600);
+      await t(700);
 
-    bus.spawnSwarmAgent(researchSwarm.id, {
-      name: 'Price Scraper',
-      role: 'worker',
-      parentId: scrapeLeader.id,
-      status: 'running',
-      currentTask: 'Extracting pricing from 5 sites',
-    });
+      const parentDept = departments.find((d) => d.id === spec.parentId);
+      bus.sendChatMessage(`⚡ **${spec.name}** spawning swarm: \`${cfg.command}\``, { agentName: parentDept?.name || 'Department' });
+      log(spec.id, spec.name, `Workload critical — spawning swarm`, 'processing');
 
-    await t(400);
+      const session = bus.startSwarm(spec.id, cfg.command);
 
-    bus.spawnSwarmAgent(researchSwarm.id, {
-      name: 'Feature Scraper',
-      role: 'worker',
-      parentId: scrapeLeader.id,
-      status: 'running',
-      currentTask: 'Comparing feature matrices',
-    });
+      await t(400);
 
-    bus.updateCodexApiUsage({ fiveHourPct: 52, weeklyPct: 18, codexTasks: 24 });
+      const leader = bus.spawnSwarmAgent(session.id, {
+        name: cfg.leaderName,
+        role: 'leader',
+        parentId: spec.id,
+        status: 'spawning',
+        currentTask: 'Initializing...',
+      });
+      if (!leader) continue;
 
-    await t(2500);
+      await t(300);
+      bus.updateSwarmAgent(session.id, leader.id, { status: 'running', currentTask: `Orchestrating ${cfg.workers.length} workers` });
+
+      const workerIds: string[] = [];
+      for (const w of cfg.workers) {
+        await t(250);
+        const worker = bus.spawnSwarmAgent(session.id, {
+          name: w.name,
+          role: 'worker',
+          parentId: leader.id,
+          status: 'running',
+          currentTask: w.task,
+        });
+        if (worker) workerIds.push(worker.id);
+      }
+
+      swarmIds.push({ specId: spec.id, sessionId: session.id, leaderId: leader.id, workerIds });
+    }
+
+    bus.updateSystemVitals({ cpu: { percentage: 92, subtitle: 'Apple M4', details: [
+      { label: 'user', value: '64.1%' }, { label: 'sys', value: '27.9%' },
+      { label: 'idle', value: '8.0%' }, { label: 'cores', value: '10' },
+    ]}});
+    bus.updateCodexApiUsage({ fiveHourPct: 68, weeklyPct: 22, codexTasks: 45 });
+    bus.updateMetrics({ activeTasks: specialists.length + swarmIds.reduce((s, sw) => s + sw.workerIds.length, 0) });
+
+    bus.sendChatMessage('🐝 **All 7 swarms active.** Agency at full capacity — every specialist has spawned workers.\n\nTotal workers: ' +
+      swarmIds.reduce((s, sw) => s + sw.workerIds.length, 0) + ' across ' + swarmIds.length + ' swarms.', { agentName: 'Main Agent' });
+
+    await t(4000);
 
     // ─────────────────────────────────────────────
     // PHASE 6 — Workers start completing
     // ─────────────────────────────────────────────
-    bus.sendChatMessage('✅ Build swarm workers reporting back...', { agentName: 'Engineering' });
+    bus.sendChatMessage('✅ Swarm workers starting to report back...', { agentName: 'Main Agent' });
 
-    // Engineering swarm results
-    const engSession = () => bus.getState().swarmSessions.find((s) => s.id === engSwarm.id);
+    for (const sw of swarmIds) {
+      for (let i = 0; i < sw.workerIds.length; i++) {
+        await t(600);
+        const session = bus.getState().swarmSessions.find((s) => s.id === sw.sessionId);
+        const worker = session?.agents.find((a) => a.id === sw.workerIds[i]);
+        if (!worker) continue;
 
-    const dbMigrator = engSession()?.agents.find((a) => a.name === 'DB Migrator');
-    if (dbMigrator) {
-      bus.updateSwarmAgent(engSwarm.id, dbMigrator.id, { status: 'completed', currentTask: '6 migrations applied' });
-      log('dev-dept', 'Engineering', 'DB Migrator: 6 migrations applied successfully', 'completed');
+        // Random chance of error (1 in 10)
+        const hasError = Math.random() < 0.1;
+        if (hasError) {
+          bus.updateSwarmAgent(sw.sessionId, worker.id, {
+            status: 'error',
+            currentTask: 'Failed — rate limited',
+            error: '429 Too Many Requests',
+          });
+          log(sw.specId, specialists.find((s) => s.id === sw.specId)?.name || '', `${worker.name} hit rate limit`, 'failed');
+        } else {
+          bus.updateSwarmAgent(sw.sessionId, worker.id, {
+            status: 'completed',
+            currentTask: 'Done ✓',
+          });
+          log(sw.specId, specialists.find((s) => s.id === sw.specId)?.name || '', `${worker.name} completed`, 'completed');
+        }
+      }
+
+      // Leader completes
+      await t(300);
+      bus.updateSwarmAgent(sw.sessionId, sw.leaderId, { status: 'completed', currentTask: 'All workers finished' });
+      bus.completeSwarm(sw.sessionId);
     }
 
-    await t(1200);
-
-    const apiScaffolder = engSession()?.agents.find((a) => a.name === 'API Scaffolder');
-    if (apiScaffolder) {
-      bus.updateSwarmAgent(engSwarm.id, apiScaffolder.id, { status: 'completed', currentTask: '8 endpoints ready' });
-      log('dev-dept', 'Engineering', 'API Scaffolder: 8 REST endpoints generated', 'completed');
-    }
-
-    await t(1000);
-
-    const componentBuilder = engSession()?.agents.find((a) => a.name === 'Component Builder');
-    if (componentBuilder) {
-      bus.updateSwarmAgent(engSwarm.id, componentBuilder.id, { status: 'completed', currentTask: '14 components built' });
-      log('dev-dept', 'Engineering', 'Component Builder: 14 React components ready', 'completed');
-    }
-
-    await t(600);
-
-    bus.updateSwarmAgent(engSwarm.id, buildLeader.id, { status: 'completed', currentTask: 'Build complete — all workers done' });
-    bus.completeSwarm(engSwarm.id);
-
-    // QA kicks in
-    bus.updateAgent('qa-spec', { status: 'running' });
-    log('qa-spec', 'QA Agent', 'Running full test suite against build output', 'processing');
+    bus.updateCodexApiUsage({ fiveHourPct: 85, weeklyPct: 32, codexTasks: 72 });
 
     await t(1500);
 
     // ─────────────────────────────────────────────
-    // PHASE 7 — Research swarm finishes (one error)
+    // PHASE 7 — Wrap up
     // ─────────────────────────────────────────────
-    const resSession = () => bus.getState().swarmSessions.find((s) => s.id === researchSwarm.id);
-
-    const priceScraper = resSession()?.agents.find((a) => a.name === 'Price Scraper');
-    if (priceScraper) {
-      bus.updateSwarmAgent(researchSwarm.id, priceScraper.id, { status: 'completed', currentTask: 'Pricing data collected' });
+    for (const spec of specialists) {
+      bus.updateAgent(spec.id, { status: 'complete', queueCount: 0 });
     }
-
-    await t(800);
-
-    const featureScraper = resSession()?.agents.find((a) => a.name === 'Feature Scraper');
-    if (featureScraper) {
-      bus.updateSwarmAgent(researchSwarm.id, featureScraper.id, { status: 'error', currentTask: 'Rate limited on 2 sites', error: '429 Too Many Requests — competitor-a.com' });
-      log('research-dept', 'Research', 'Feature Scraper hit rate limit on competitor-a.com', 'failed');
+    await t(500);
+    for (const dept of departments) {
+      bus.updateAgent(dept.id, { status: 'idle', queueCount: 0 });
     }
-
-    await t(600);
-
-    bus.updateSwarmAgent(researchSwarm.id, scrapeLeader!.id, { status: 'completed', currentTask: 'Partial results — 1 worker failed' });
-    bus.completeSwarm(researchSwarm.id, 'completed');
-
-    await t(1500);
-
-    // ─────────────────────────────────────────────
-    // PHASE 8 — Content finishes, specialists wrap up
-    // ─────────────────────────────────────────────
-    bus.sendChatMessage('📝 Content team delivering launch materials.', { agentName: 'Content' });
-
-    bus.updateAgent('copywriter-spec', { status: 'complete', queueCount: 0 });
-    log('copywriter-spec', 'Copywriter', 'Launch blog + hero copy delivered', 'completed');
-
-    await t(600);
-
-    bus.updateAgent('seo-spec', { status: 'complete', queueCount: 0 });
-    log('seo-spec', 'SEO Specialist', 'Keywords mapped, meta tags generated', 'completed');
-    bus.updateAgent('content-dept', { status: 'idle', queueCount: 0 });
-
-    await t(800);
-
-    // Research specialists finish
-    bus.updateAgent('analyst-spec', { status: 'complete', queueCount: 0 });
-    log('analyst-spec', 'Data Analyst', 'Competitor report ready — 3 key insights', 'completed');
-    bus.updateAgent('scraper-spec', { status: 'complete', queueCount: 0 });
-    bus.updateAgent('research-dept', { status: 'idle', queueCount: 0 });
-
-    await t(800);
-
-    // QA finishes
-    bus.updateAgent('qa-spec', { status: 'complete', queueCount: 0 });
-    log('qa-spec', 'QA Agent', '47 tests passed, 2 warnings', 'completed');
-
-    // Engineering wraps
-    bus.updateAgent('frontend-spec', { status: 'complete', queueCount: 0 });
-    bus.updateAgent('backend-spec', { status: 'complete', queueCount: 0 });
-    bus.updateAgent('dev-dept', { status: 'idle', queueCount: 0 });
-
-    await t(600);
-
-    // Ops finishes
-    bus.updateAgent('ops-dept', { status: 'idle', queueCount: 0 });
-    log('ops-dept', 'Operations', 'CI/CD pipeline configured, monitoring active', 'completed');
-
-    await t(800);
-
-    // ─────────────────────────────────────────────
-    // PHASE 9 — Main Agent wraps up
-    // ─────────────────────────────────────────────
-    bus.updateMetrics({ activeTasks: 0, completedToday: 12 });
-    bus.updateCodexApiUsage({ fiveHourPct: 71, weeklyPct: 24, codexTasks: 38 });
-    bus.updateSystemVitals({ cpu: { percentage: 35, subtitle: 'Apple M4', details: [
-      { label: 'user', value: '18.4%' }, { label: 'sys', value: '16.6%' },
-      { label: 'idle', value: '65.0%' }, { label: 'cores', value: '10' },
-    ]}});
+    await t(500);
 
     bus.updateAgent('main-agent', { status: 'idle', queueCount: 0 });
-    bus.sendChatMessage('🎉 Q3 Product Launch — all tasks complete.\n\n• **Engineering**: Product built, 14 components + 8 APIs\n• **Content**: Blog, landing page, and social ready\n• **Research**: Competitor intel gathered (1 partial failure)\n• **Operations**: Pipeline deployed\n\n2 swarms used, 38 Codex calls, 0 critical failures.', { agentName: 'Main Agent' });
-    log('main-agent', 'Main Agent', 'Project complete: Q3 Product Launch delivered', 'completed');
+    bus.updateMetrics({ activeTasks: 0, completedToday: 72 });
+    bus.updateSystemVitals({ cpu: { percentage: 28, subtitle: 'Apple M4', details: [
+      { label: 'user', value: '14.2%' }, { label: 'sys', value: '13.8%' },
+      { label: 'idle', value: '72.0%' }, { label: 'cores', value: '10' },
+    ]}});
+
+    bus.sendChatMessage('🎉 **Agency build complete.**\n\n• 1 Main Agent\n• 4 Departments\n• 7 Specialists\n• 7 Swarms spawned (' +
+      swarmIds.reduce((s, sw) => s + sw.workerIds.length, 0) + ' total workers)\n• 72 Codex calls\n\nFull Q3 Product Launch delivered.', { agentName: 'Main Agent' });
+    log('main-agent', 'Main Agent', 'Agency demo complete — all swarms resolved', 'completed');
   })();
 }
 
-// Start demo 1s after page loads
-setTimeout(runAgencyDemo, 1000);
+// Start demo 1.5s after page loads
+setTimeout(runAgencyDemo, 1500);
 
 export { bus, api };
 export default bus;
