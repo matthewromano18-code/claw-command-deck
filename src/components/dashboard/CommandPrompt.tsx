@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Zap } from 'lucide-react';
+import { Send, Terminal } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface CommandPromptProps {
@@ -22,11 +22,11 @@ const CommandPrompt = ({ onSubmit }: CommandPromptProps) => {
       onSubmit={handleSubmit}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative flex items-center gap-3 glass-panel-strong p-2 pl-4 transition-all duration-300 ${
+      className={`relative flex items-center gap-3 glass-panel-strong p-2 pl-4 transition-all duration-200 ${
         isFocused ? 'glow-border' : ''
       }`}
     >
-      <Zap className="w-4 h-4 text-primary shrink-0" />
+      <Terminal className="w-4 h-4 text-primary shrink-0" />
       <input
         type="text"
         value={value}
@@ -39,7 +39,7 @@ const CommandPrompt = ({ onSubmit }: CommandPromptProps) => {
       <button
         type="submit"
         disabled={!value.trim()}
-        className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         <Send className="w-3.5 h-3.5" />
         Send
