@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-utils/schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for Mission Control",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-execute",
+    "shell:allow-open",
+    "notification:default",
+    "notification:allow-request-permission",
+    "notification:allow-is-permission-granted",
+    "notification:allow-notify",
+    "store:default",
+    "os:default"
+  ]
+}
