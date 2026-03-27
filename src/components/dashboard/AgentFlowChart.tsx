@@ -106,81 +106,117 @@ const AgentFlowChartInner = ({
 
     activeSessions.forEach((session) => {
       const triggerNode = ns.find((n) => n.id === session.triggerAgentId);
-      const baseX = triggerNode ? triggerNode.position.x : 0;
-      const baseY = triggerNode ? triggerNode.position.y : 340;
+      if (!triggerNode) return;
 
-      // Build a map of swarm agent children
-      const rootAgents = session.agents.filter((a) => a.parentId === session.triggerAgentId);
+      const baseX = triggerNode.position.x;
+      const baseY = triggerNode.position.y;
+
+      // Find the leader (first agent whose parentId is the trigger)
+      const leader = session.agents.find(
+        (a) => a.parentId === session.triggerAgentId && a.role === 'leader'
+      ) || session.agents.find((a) => a.parentId === session.triggerAgentId);
+
+      if (!leader) return;
+
+      // Workers = agents whose parent is the leader
+      const workers = session.agents.filter((a) => a.parentId === leader.id);
+
+      // Sub-workers = anyone deeper
       const childMap = new Map<string, typeof session.agents>();
       session.agents.forEach((a) => {
         if (!childMap.has(a.parentId)) childMap.set(a.parentId, []);
         childMap.get(a.parentId)!.push(a);
       });
 
-      // BFS layout for swarm agents
-      const swarmSpacing = 180;
-      let queue = rootAgents.map((a, i) => ({
-        agent: a,
-        depth: 1,
-        index: i,
-        total: rootAgents.length,
-      }));
+      // Place leader directly below the trigger agent
+      const leaderNodeId = `swarm-${session.id}-${leader.id}`;
+      ns.push({
+        id: leaderNodeId,
+        type: 'swarmNode',
+        position: { x: baseX, y: baseY + 140 },
+        data: { swarmAgent: leader, isRoot: true },
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
+      });
 
-      const visited = new Set<string>();
+      // Edge: trigger → leader
+      es.push({
+        id: `e-swarm-trigger-${leader.id}`,
+        source: session.triggerAgentId,
+        target: leaderNodeId,
+        animated: leader.status === 'running' || leader.status === 'spawning',
+        style: {
+          stroke: 'hsl(218, 68%, 50%)',
+          strokeWidth: 2,
+        },
+      });
 
-      while (queue.length > 0) {
-        const current = queue.shift()!;
-        if (visited.has(current.agent.id)) continue;
-        visited.add(current.agent.id);
+      // Place workers fanning out below the leader
+      const workerSpacing = 190;
+      const workerStartX = baseX - ((workers.length - 1) * workerSpacing) / 2;
 
-        const offsetX = baseX + (current.index - (current.total - 1) / 2) * swarmSpacing;
-        const offsetY = baseY + current.depth * 120;
-
-        const nodeId = `swarm-${session.id}-${current.agent.id}`;
+      workers.forEach((worker, i) => {
+        const workerNodeId = `swarm-${session.id}-${worker.id}`;
+        const wx = workerStartX + i * workerSpacing;
+        const wy = baseY + 280;
 
         ns.push({
-          id: nodeId,
+          id: workerNodeId,
           type: 'swarmNode',
-          position: { x: offsetX, y: offsetY },
-          data: {
-            swarmAgent: current.agent,
-            isRoot: current.depth === 1,
-          },
+          position: { x: wx, y: wy },
+          data: { swarmAgent: worker, isRoot: false },
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
         });
 
-        // Edge from parent
-        const parentNodeId = current.agent.parentId === session.triggerAgentId
-          ? session.triggerAgentId
-          : `swarm-${session.id}-${current.agent.parentId}`;
-
+        // Edge: leader → worker
         es.push({
-          id: `e-swarm-${session.id}-${current.agent.id}`,
-          source: parentNodeId,
-          target: nodeId,
-          animated: current.agent.status === 'running' || current.agent.status === 'spawning',
+          id: `e-swarm-${session.id}-${worker.id}`,
+          source: leaderNodeId,
+          target: workerNodeId,
+          animated: worker.status === 'running' || worker.status === 'spawning',
           style: {
-            stroke: current.agent.status === 'error'
+            stroke: worker.status === 'error'
               ? 'hsl(0, 55%, 50%)'
-              : current.agent.status === 'running'
+              : worker.status === 'running' || worker.status === 'spawning'
               ? 'hsl(218, 68%, 50%)'
-              : undefined,
-            strokeDasharray: '4 3',
+              : 'hsl(var(--border))',
+            strokeDasharray: '5 4',
           },
         });
 
-        // Queue children
-        const children = childMap.get(current.agent.id) || [];
-        children.forEach((child, ci) => {
-          queue.push({
-            agent: child,
-            depth: current.depth + 1,
-            index: ci,
-            total: children.length,
+        // Sub-workers below each worker
+        const subWorkers = childMap.get(worker.id) || [];
+        const subSpacing = 170;
+        const subStartX = wx - ((subWorkers.length - 1) * subSpacing) / 2;
+
+        subWorkers.forEach((sub, si) => {
+          const subNodeId = `swarm-${session.id}-${sub.id}`;
+          ns.push({
+            id: subNodeId,
+            type: 'swarmNode',
+            position: { x: subStartX + si * subSpacing, y: baseY + 410 },
+            data: { swarmAgent: sub, isRoot: false },
+            sourcePosition: Position.Bottom,
+            targetPosition: Position.Top,
+          });
+
+          es.push({
+            id: `e-swarm-${session.id}-${sub.id}`,
+            source: workerNodeId,
+            target: subNodeId,
+            animated: sub.status === 'running' || sub.status === 'spawning',
+            style: {
+              stroke: sub.status === 'error'
+                ? 'hsl(0, 55%, 50%)'
+                : sub.status === 'running' || sub.status === 'spawning'
+                ? 'hsl(218, 68%, 50%)'
+                : 'hsl(var(--border))',
+              strokeDasharray: '5 4',
+            },
           });
         });
-      }
+      });
     });
 
     return { nodes: ns, edges: es };
